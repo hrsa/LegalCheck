@@ -1,0 +1,12 @@
+venv/
+env/
+.env/
+.venv/
+/.idea/
+__pycache__/
+*.py[cod]
+*$py.class
+dist/
+build/
+*.egg-info/
+/app/storage/
