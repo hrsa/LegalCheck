@@ -1,16 +1,15 @@
+from app.api.v1.schemas.user import UserBase, UserCreate, UserUpdate
+from app.core.user_manager import fastapi_users
 import sentry_sdk
-from fastapi import FastAPI, Form, Depends
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 
 from app.api.v1.routers.analysis import router as analysis_router
 from app.api.v1.routers.document import router as document_router
 from app.api.v1.routers.policy import router as policy_router
 from app.api.v1.routers.rule import router as rule_router
+from app.core.auth import auth_backend
 from app.core.config import settings
-from app.db.models import Document
-from app.db.session import get_async_session
 
 sentry_sdk.init(
     dsn=settings.SENTRY_DSN_URL,
@@ -34,10 +33,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(policy_router, prefix="/api/v1/policies", tags=["policies"])
-app.include_router(document_router, prefix="/api/v1/documents", tags=["documents"])
-app.include_router(analysis_router, prefix="/api/v1/documents", tags=["analysis"])
-app.include_router(rule_router, prefix="/api/v1/rules", tags=["rules"])
+app.include_router(policy_router, prefix=f"{settings.API_V1_STR}/policies", tags=["policies"])
+app.include_router(document_router, prefix=f"{settings.API_V1_STR}/documents", tags=["documents"])
+app.include_router(analysis_router, prefix=f"{settings.API_V1_STR}/documents", tags=["analysis"])
+app.include_router(rule_router, prefix=f"{settings.API_V1_STR}/rules", tags=["rules"])
+app.include_router(fastapi_users.get_auth_router(auth_backend), prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
+app.include_router(fastapi_users.get_register_router(user_schema=UserBase, user_create_schema=UserCreate), prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
+app.include_router(fastapi_users.get_users_router(user_schema=UserBase, user_update_schema=UserUpdate), prefix=f"{settings.API_V1_STR}/users", tags=["users"])
+app.include_router(fastapi_users.get_verify_router(user_schema=UserBase), prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
+app.include_router(fastapi_users.get_reset_password_router(), prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
 
 analysis_results = {}
 
@@ -45,14 +49,3 @@ analysis_results = {}
 @app.get("/")
 def read_root():
     return {"message": "Welcome to LegalCheck API"}
-
-@app.post("/")
-async def reply(doc: int = Form(...), message: str = Form(...), db: AsyncSession = Depends(get_async_session)):
-    result = await db.execute(select(Document).filter(Document.id == doc))
-    document = result.scalar_one_or_none()
-    # print(document.file_path)
-    # dp = DocumentProcessor()
-    # text = dp.process_document(file_path=document.file_path)
-    # answer = semantic_search(db, text)
-    # answer = upload_file(document.file_path, message)
-    return {"answer": answer}

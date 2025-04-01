@@ -19,10 +19,8 @@ async def chat_with_document(text: str, gemini_file_name: str, db: AsyncSession)
     document = gemini_client.files.get(name=gemini_file_name)
     relevant_rules = format_policies_and_rules_into_text(await semantic_search(text=text, db=db))
 
-    # prompt = text + "\n\n here are some relevant rules from my database:\n" + relevant_rules + "\n\n"
-
-    # print(prompt)
     print(text)
+    print(relevant_rules)
     response = gemini_client.models.generate_content(
         model="gemini-2.0-flash",
         contents=[document, "\n\n", text],

@@ -18,7 +18,7 @@ async def upload_document(company_id: int = Form(...), file: UploadFile = File(.
         "file_content": file_content,
     }
 
-    return save_document(db, DocumentCreate(**document_data))
+    return await save_document(db, DocumentCreate(**document_data))
 
 
 @router.get("/{document_id}/", response_model=DocumentInDB)

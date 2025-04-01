@@ -10,3 +10,5 @@ dist/
 build/
 *.egg-info/
 /app/storage/
+/.env
+/LegalCheck.txt
