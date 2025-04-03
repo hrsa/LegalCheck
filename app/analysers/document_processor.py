@@ -35,7 +35,8 @@ class DocumentProcessor:
         print(text)
         return text
 
-    def process_pdf(self, file_path):
+    @staticmethod
+    def process_pdf(file_path):
         text = ""
         with fitz.open(file_path) as doc:
             for page in doc:
@@ -51,11 +52,13 @@ class DocumentProcessor:
             ocr_text += pytesseract.image_to_string(img)
         return ocr_text.strip()
 
-    def process_txt(self, file_path):
+    @staticmethod
+    def process_txt(file_path):
         with open(file_path, 'r', encoding='utf-8') as file:
             return file.read().strip()
 
-    def process_doc(self, file_path):
+    @staticmethod
+    def process_doc(file_path):
         if file_path.lower().endswith(".docx"):
             doc = docx.Document(file_path)
             return "\n".join([para.text for para in doc.paragraphs]).strip()
@@ -69,7 +72,8 @@ class DocumentProcessor:
         else:
             raise ValueError("Unsupported Word format.")
 
-    def process_odt(self, file_path):
+    @staticmethod
+    def process_odt(file_path):
         odt_doc = ezodf.opendoc(file_path)
         doc_text = []
         for elem in odt_doc.body:
@@ -78,7 +82,8 @@ class DocumentProcessor:
         return "\n".join(doc_text).strip()
 
 
-    def process_image(self, file_path):
+    @staticmethod
+    def process_image(file_path):
         img = Image.open(file_path)
         text = pytesseract.image_to_string(img)
         return text.strip()

@@ -9,7 +9,7 @@ from app.db.session import get_async_session
 router = APIRouter()
 
 
-@router.post("/{document_id}/analyze/", response_model=AnalysisResult)
+@router.post("/{document_id}/analyze", response_model=AnalysisResult)
 async def analyze_uploaded_document(document_id: int, db: AsyncSession = Depends(get_async_session)):
     try:
         document = await upload_document_to_gemini(db, document_id)
@@ -20,7 +20,7 @@ async def analyze_uploaded_document(document_id: int, db: AsyncSession = Depends
     return analysis_data
 
 
-@router.post("/{document_id}/chat/")
+@router.post("/{document_id}/chat")
 async def chat_to_the_document(document_id: int, message: str = Form(...),
                                db: AsyncSession = Depends(get_async_session)):
     try:

@@ -8,7 +8,6 @@ pydantic-settings~=2.8.1
 python-multipart>=0.0.6
 SQLAlchemy>=2.0.0
 psycopg2-binary
-requests~=2.32.3
 sentry-sdk~=2.24.0
 alembic~=1.15.1
 
@@ -33,10 +32,11 @@ nltk>=3.8.1
 spacy>=3.6.0
 
 # OpenAI integration (optional)
-openai>=0.27.0
+openai~=1.68.2
 google-genai
 
 python-dotenv>=1.0.1
 
 pgvector~=0.4.0
 protobuf~=5.29.4
+google~=3.0.0
