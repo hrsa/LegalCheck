@@ -22,16 +22,18 @@ async def upload_document_to_gemini(db: AsyncSession, document_id: int) -> Docum
         return document
 
     temp_file_created = False
+    file_path = document.file_path
 
     if document.content_type != "text/plain":
-        document_text = DocumentProcessor().process_document(document.file_path)
+        try:
+            document_text = document.text_content or DocumentProcessor().process_document(document.file_path)
 
-        file_path = f"/tmp/{document.filename}.txt"
-        with open(file_path, "w", encoding="utf-8") as temp_file:
-            temp_file.write(document_text)
-        temp_file_created = True
-    else:
-        file_path = document.file_path
+            file_path = f"/tmp/{document.filename}.txt"
+            with open(file_path, "w", encoding="utf-8") as temp_file:
+                temp_file.write(document_text)
+            temp_file_created = True
+        except ValueError as e:
+            print(f"Error processing {document_id}: {e}")
 
     response = upload_file(file_path)
 
@@ -76,6 +78,8 @@ async def analyze_document(db: AsyncSession, document: Document):
 async def chat_with_document(db:AsyncSession, document_id: int, message: str):
     result = await db.execute(select(Document).filter(Document.id == document_id))
     document = result.scalar_one_or_none()
+
+    print(f"Chat with document {document_id}")
 
     if not document:
         raise Exception("Document not found")
