@@ -34,4 +34,9 @@ fastapi_users = FastAPIUsers[User, int](
     [auth_backend]
 )
 
-current_user = fastapi_users.current_user()
+def get_current_user(
+        active: bool = False,
+        verified: bool = False,
+        superuser: bool = False
+):
+    return fastapi_users.current_user(active=active, verified=verified, superuser=superuser)

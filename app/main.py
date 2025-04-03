@@ -1,5 +1,7 @@
+from fastapi.params import Depends
+
 from app.api.v1.schemas.user import UserBase, UserCreate, UserUpdate
-from app.core.user_manager import fastapi_users
+from app.core.user_manager import fastapi_users, get_current_user
 import sentry_sdk
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -34,7 +36,7 @@ app.add_middleware(
 )
 
 app.include_router(policy_router, prefix=f"{settings.API_V1_STR}/policies", tags=["policies"])
-app.include_router(document_router, prefix=f"{settings.API_V1_STR}/documents", tags=["documents"])
+app.include_router(document_router, prefix=f"{settings.API_V1_STR}/documents", tags=["documents"], dependencies=[Depends(get_current_user())])
 app.include_router(analysis_router, prefix=f"{settings.API_V1_STR}/documents", tags=["analysis"])
 app.include_router(rule_router, prefix=f"{settings.API_V1_STR}/rules", tags=["rules"])
 app.include_router(fastapi_users.get_auth_router(auth_backend), prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
