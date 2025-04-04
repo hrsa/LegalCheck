@@ -1,9 +1,13 @@
+import sys
+
 from fastapi.params import Depends
+from loguru import logger
 
 from app.api.v1.schemas.user import UserBase, UserCreate, UserUpdate
+
 from app.core.user_manager import fastapi_users, get_current_user
 import sentry_sdk
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.routers.analysis import router as analysis_router
@@ -12,6 +16,24 @@ from app.api.v1.routers.policy import router as policy_router
 from app.api.v1.routers.rule import router as rule_router
 from app.core.auth import auth_backend
 from app.core.config import settings
+
+logger.remove()
+
+logger.add(
+    sys.stdout,
+    colorize=True,
+    format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level}</level> | <cyan>{message}</cyan>",
+    level=settings.LOG_LEVEL,
+)
+
+logger.add(
+    settings.LOG_FILE_PATH,
+    rotation="00:00",
+    retention="60 days",
+    compression="zip",
+    level=settings.LOG_LEVEL,
+    format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}"
+)
 
 sentry_sdk.init(
     dsn=settings.SENTRY_DSN_URL,
@@ -36,13 +58,17 @@ app.add_middleware(
 )
 
 app.include_router(policy_router, prefix=f"{settings.API_V1_STR}/policies", tags=["policies"])
-app.include_router(document_router, prefix=f"{settings.API_V1_STR}/documents", tags=["documents"], dependencies=[Depends(get_current_user())])
+app.include_router(document_router, prefix=f"{settings.API_V1_STR}/documents", tags=["documents"],
+                   dependencies=[Depends(get_current_user())])
 app.include_router(analysis_router, prefix=f"{settings.API_V1_STR}/documents", tags=["analysis"])
 app.include_router(rule_router, prefix=f"{settings.API_V1_STR}/rules", tags=["rules"])
 app.include_router(fastapi_users.get_auth_router(auth_backend), prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
-app.include_router(fastapi_users.get_register_router(user_schema=UserBase, user_create_schema=UserCreate), prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
-app.include_router(fastapi_users.get_users_router(user_schema=UserBase, user_update_schema=UserUpdate), prefix=f"{settings.API_V1_STR}/users", tags=["users"])
-app.include_router(fastapi_users.get_verify_router(user_schema=UserBase), prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
+app.include_router(fastapi_users.get_register_router(user_schema=UserBase, user_create_schema=UserCreate),
+                   prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
+app.include_router(fastapi_users.get_users_router(user_schema=UserBase, user_update_schema=UserUpdate),
+                   prefix=f"{settings.API_V1_STR}/users", tags=["users"])
+app.include_router(fastapi_users.get_verify_router(user_schema=UserBase), prefix=f"{settings.API_V1_STR}/auth",
+                   tags=["auth"])
 app.include_router(fastapi_users.get_reset_password_router(), prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
 
 analysis_results = {}

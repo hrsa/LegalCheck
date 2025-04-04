@@ -2,11 +2,14 @@ from pydantic_settings import BaseSettings
 import os
 from typing import Optional
 
+BASE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "LegalCheck"
     API_V1_STR: str = "/api/v1"
-    BASE_DIR: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    LOG_LEVEL: str = "INFO"
+    LOG_FILE_PATH: str = os.path.join(BASE, "logs/app.log")
+    BASE_DIR: str = BASE
     SECRET_KEY: str
 
     # Sensitive or environment-specific settings
