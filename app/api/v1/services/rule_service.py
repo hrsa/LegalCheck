@@ -28,16 +28,14 @@ async def create_rule(db: AsyncSession, rule: RuleCreate):
 
 
 async def update_rule(db: AsyncSession, rule_id: int, rule_data: RuleUpdate):
-    result = await db.execute(
-        select(PolicyRule).filter(PolicyRule.id == rule_id)
-    )
-    db_rule = result.scalar_one_or_none()
+    db_rule = await get_rule(db, rule_id)
     if not db_rule:
         return None
 
-    for field, value in rule_data.model_dump().items():
-        if hasattr(db_rule, field):
-            setattr(db_rule, field, value)
+    update_data = rule_data.model_dump(exclude_unset=True, exclude_none=True)
+
+    for field, value in update_data.items():
+        setattr(db_rule, field, value)
 
     await db.commit()
     await db.refresh(db_rule)
@@ -45,10 +43,7 @@ async def update_rule(db: AsyncSession, rule_id: int, rule_data: RuleUpdate):
 
 
 async def delete_rule(db: AsyncSession, rule_id: int):
-    result = await db.execute(
-        select(PolicyRule).filter(PolicyRule.id == rule_id)
-    )
-    db_rule = result.scalar_one_or_none()
+    db_rule = await get_rule(db, rule_id)
     if db_rule:
         await db.delete(db_rule)
         await db.commit()

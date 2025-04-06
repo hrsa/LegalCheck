@@ -29,7 +29,7 @@ async def create_rule(rule: RuleCreate, db: AsyncSession = Depends(get_async_ses
     return await create_rule_service(db, rule)
 
 
-@router.put("/{rule_id}", response_model=RuleInDB)
+@router.patch("/{rule_id}", response_model=RuleInDB)
 async def update_rule(rule_id: int, rule: RuleUpdate, db: AsyncSession = Depends(get_async_session)):
     updated_rule = await update_rule_service(db, rule_id, rule_data=rule)
     if updated_rule is None:

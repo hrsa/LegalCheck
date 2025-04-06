@@ -26,7 +26,9 @@ class PolicyCreate(PolicyBase):
 
 
 class PolicyUpdate(PolicyBase):
-    id: int
+    name: Optional[str] = None
+    policy_type: Optional[PolicyType] = None
+    is_active: Optional[bool] = None
 
 
 class PolicyInDB(PolicyBase):

@@ -1,10 +1,10 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, Boolean, JSON
+import datetime
+
+from sqlalchemy import Integer, String, Text, ForeignKey, DateTime, JSON
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from app.api.v1.schemas.rule import RuleType, Severity
 from app.db.base_class import Base
-from sqlalchemy.orm import relationship, Mapped, mapped_column
-import datetime
-
 from app.db.models import Policy, Embedding
 
 
@@ -16,7 +16,7 @@ class PolicyRule(Base):
     rule_type: Mapped[RuleType] = mapped_column(String)  # conflict, risk, requirement
     description: Mapped[str] = mapped_column(Text)
     severity: Mapped[Severity] = mapped_column(String)  # high, medium, low
-    keywords: Mapped[set[str]] = mapped_column(JSON)
+    keywords: Mapped[list[str]] = mapped_column(JSON)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc)
 )
     updated_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc),
