@@ -57,7 +57,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(policy_router, prefix=f"{settings.API_V1_STR}/policies", tags=["policies"])
+app.include_router(policy_router, prefix=f"{settings.API_V1_STR}/policies", tags=["policies"], dependencies=[Depends(get_current_user())])
 app.include_router(document_router, prefix=f"{settings.API_V1_STR}/documents", tags=["documents"],
                    dependencies=[Depends(get_current_user())])
 app.include_router(analysis_router, prefix=f"{settings.API_V1_STR}/documents", tags=["analysis"])
@@ -66,7 +66,8 @@ app.include_router(fastapi_users.get_auth_router(auth_backend), prefix=f"{settin
 app.include_router(fastapi_users.get_register_router(user_schema=UserBase, user_create_schema=UserCreate),
                    prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
 app.include_router(fastapi_users.get_users_router(user_schema=UserBase, user_update_schema=UserUpdate),
-                   prefix=f"{settings.API_V1_STR}/users", tags=["users"])
+                   prefix=f"{settings.API_V1_STR}/users", tags=["users"],
+                   dependencies=[Depends(get_current_user(active=True))])
 app.include_router(fastapi_users.get_verify_router(user_schema=UserBase), prefix=f"{settings.API_V1_STR}/auth",
                    tags=["auth"])
 app.include_router(fastapi_users.get_reset_password_router(), prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])

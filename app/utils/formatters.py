@@ -22,3 +22,11 @@ def format_policies_and_rules_into_text(policies: list[PolicyWithRules]) -> str:
         formatted_policies.append("\n".join(policy_info))
 
     return "\n\n---\n\n".join(formatted_policies)
+
+
+def print_model(model, label="Model"):
+    print(f"\n--- {label} ---")
+    for c in model.__table__.columns:
+        print(f"{c.name}: {getattr(model, c.name)}")
+    print("-" * (len(label) + 8))
+

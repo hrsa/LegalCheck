@@ -1,19 +1,31 @@
 import os
 import uuid
 
-from fastapi import BackgroundTasks
+from fastapi import BackgroundTasks, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.analysers.document_processor import DocumentProcessor
 from app.api.v1.schemas.document import DocumentCreate
 from app.core.config import settings
-from app.db.models import Document
+from app.db.models import Document, User
 
 DOCUMENT_STORAGE = os.path.join(settings.BASE_DIR, "storage/documents")
 
 
-async def save_document(db: AsyncSession, document: DocumentCreate, background_tasks: BackgroundTasks) -> Document:
+async def save_document(db: AsyncSession, file: UploadFile, user: User, background_tasks: BackgroundTasks, company_id: int = None,) -> Document:
+
+    file_content = await file.read()
+    document = DocumentCreate(
+        filename=file.filename,
+        content_type=file.content_type,
+        company_id=user.company_id,
+        file_content=file_content,
+    )
+
+    if user.is_superuser:
+        document.company_id = company_id
+
     if not os.path.exists(DOCUMENT_STORAGE):
         os.makedirs(DOCUMENT_STORAGE)
 
