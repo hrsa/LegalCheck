@@ -16,7 +16,7 @@ class Severity(str, Enum):
     high = "high"
 
 
-class RuleBase(BaseModel):
+class RuleBase(BaseModel, from_attributes = True):
     policy_id: int
     rule_type: RuleType
     description: Optional[str] = None
@@ -58,9 +58,5 @@ class RuleInDB(RuleBase):
 
 class RuleWithSimilarity(RuleInDB):
     similarity: float
-
-
-class Config:
-    from_attributes = True
 
 

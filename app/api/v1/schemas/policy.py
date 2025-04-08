@@ -12,7 +12,7 @@ class PolicyType(str, Enum):
     standard = "standard"
 
 
-class PolicyBase(BaseModel):
+class PolicyBase(BaseModel, from_attributes = True):
     name: str
     description: Optional[str] = None
     policy_type: PolicyType
@@ -42,6 +42,3 @@ class PolicyWithRules(PolicyInDB):
 class PolicyWithRulesForSemanticSearch(PolicyInDB):
     rules: Optional[List[RuleWithSimilarity]]
     similarity: float
-
-class Config:
-    from_attributes = True

@@ -2,7 +2,7 @@ from typing import List, Optional, Dict
 from pydantic import BaseModel
 
 
-class Conflict(BaseModel):
+class Conflict(BaseModel, from_attributes = True):
     policy_name: str
     conflict_detail: str
 

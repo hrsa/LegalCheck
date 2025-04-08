@@ -1,10 +1,18 @@
+import sys
+
 from pydantic_settings import BaseSettings
 import os
 from typing import Optional
 
 BASE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-class Settings(BaseSettings):
+
+class Settings(BaseSettings, env_file=os.getenv("ENV_FILE", ".env"), case_sensitive=True):
+
+    @property
+    def TESTING(self):
+        return 'pytest' in sys.modules
+
     PROJECT_NAME: str = "LegalCheck"
     API_V1_STR: str = "/api/v1"
     LOG_LEVEL: str = "INFO"
@@ -28,20 +36,16 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_SECONDS: int = 3600
 
-    # File storage paths
     UPLOAD_DIR: str = "uploads"
     DOCUMENT_STORAGE_PATH: str = os.path.join(UPLOAD_DIR, "documents")
     POLICY_STORAGE_PATH: str = os.path.join(UPLOAD_DIR, "policies")
 
-    # Pydantic computed properties (dynamic URLs clearly defined here)
     @property
     def DATABASE_URL(self) -> str:
+        if self.TESTING:
+            return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/test_{self.DB_NAME}"
+
         return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
-
-
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
 
 
 settings = Settings()

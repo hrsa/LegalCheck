@@ -1,7 +1,7 @@
 from fastapi_users.schemas import BaseUser, BaseUserCreate, BaseUserUpdate
 
 
-class UserBase(BaseUser[int]):
+class UserBase(BaseUser[int], from_attributes = True):
     first_name: str
     last_name: str
     company_id: int
@@ -23,7 +23,3 @@ class UserUpdate(BaseUserUpdate):
     last_name: str
     company_id: int
     pass
-
-
-class Config:
-    from_attributes = True
