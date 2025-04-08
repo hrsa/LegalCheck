@@ -77,4 +77,4 @@ analysis_results = {}
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to LegalCheck API"}
+    return {"message": f"Welcome to LegalCheck API."}

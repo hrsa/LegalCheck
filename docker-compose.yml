@@ -1,6 +1,10 @@
 services:
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base
+    container_name: lc-api
     ports:
       - "8000:8000"
     volumes:
@@ -10,8 +14,25 @@ services:
     depends_on:
       - db
 
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test
+    container_name: lc-test
+    volumes:
+      - ./:/app
+    networks:
+      - legal_check
+    depends_on:
+      - db
+      - api
+
+
+
   db:
     image: pgvector/pgvector:0.8.0-pg17
+    container_name: lc-db
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres

@@ -1,4 +1,4 @@
-FROM python:3.12.9
+FROM python:3.12.9 AS base
 
 WORKDIR /app
 
@@ -17,3 +17,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+FROM base AS test
+CMD ["pytest", "-vv", "--capture=no", "--cache-clear"]
