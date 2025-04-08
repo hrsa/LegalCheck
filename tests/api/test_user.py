@@ -72,7 +72,6 @@ async def test_me_route(async_client):
                                         "password": new_user_payload["password"]
                                     })
     response = await async_client.get(f"{settings.API_V1_STR}/users/me")
-    print(response.json())
     assert response.status_code == 200, f"Unexpected status code: {response.status_code}"
     assert "id" in response.json(), "Response missing user id"
     assert response.json()["id"] == 2
@@ -81,3 +80,28 @@ async def test_me_route(async_client):
     assert response.json()["last_name"] == new_user_payload["last_name"]
     assert response.json()["company_id"] == new_user_payload["company_id"]
     assert response.json()["is_superuser"] == False
+
+@pytest.mark.asyncio(loop_scope="session")
+async def test_logout_user(async_client):
+    response = await async_client.post(f"{settings.API_V1_STR}/auth/login",
+                            data={
+                                "username": "test2@user.com",
+                                "password": "test123"
+                            })
+
+    assert response.status_code == 204, f"Unexpected status code: {response.status_code}"
+    assert "set-cookie" in response.headers, "Response missing cookies"
+    assert "legalcheck_access_token=" in response.headers["set-cookie"], "Access token not found in cookies"
+
+    response = await async_client.get(f"{settings.API_V1_STR}/users/me")
+    assert response.status_code == 200, f"Unexpected status code: {response.status_code}"
+    assert response.json()["email"] == "test2@user.com"
+
+    response = await async_client.post(f"{settings.API_V1_STR}/auth/logout")
+    assert response.status_code == 204, f"Unexpected status code: {response.status_code}"
+    assert "set-cookie" in response.headers, "Response missing cookies"
+    assert 'legalcheck_access_token=""' in response.headers["set-cookie"], "Access token found in cookies"
+
+    unauthorized_response = await async_client.get(f"{settings.API_V1_STR}/users/me", cookies=None)
+    assert unauthorized_response.status_code == 401, f"Unexpected status code: {unauthorized_response.status_code}"
+

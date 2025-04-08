@@ -5,4 +5,4 @@ from .embedding import Embedding
 from .linked_document import LinkedDocument
 from .policy import Policy
 from .policy_rule import PolicyRule
-from .user import User
+from .user import User, AccessToken
