@@ -11,10 +11,9 @@ class Company(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String, index=True)
-    registration_number: Mapped[str] = mapped_column(String, index=True)
-    country: Mapped[str] = mapped_column(String)
-    address: Mapped[str] = mapped_column(String)
-    risk_score: Mapped[int] = mapped_column(default=0)
+    registration_number: Mapped[str | None] = mapped_column(String, nullable=True)
+    country: Mapped[str | None] = mapped_column(String, nullable=True)
+    address: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True),
                                                           default=lambda: datetime.datetime.now(datetime.timezone.utc)
                                                           )
