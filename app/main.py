@@ -15,6 +15,7 @@ from app.api.v1.routers.document import router as document_router
 from app.api.v1.routers.policy import router as policy_router
 from app.api.v1.routers.rule import router as rule_router
 from app.api.v1.routers.company import router as company_router
+from app.api.v1.routers.checklist import router as checklist_router
 from app.core.auth import auth_backend
 from app.core.config import settings
 
@@ -58,6 +59,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(checklist_router, prefix=f"{settings.API_V1_STR}/checklists", tags=["checklists"], dependencies=[Depends(get_current_user())])
 app.include_router(company_router, prefix=f"{settings.API_V1_STR}/companies", tags=["companies"], dependencies=[Depends(get_current_user())])
 app.include_router(policy_router, prefix=f"{settings.API_V1_STR}/policies", tags=["policies"], dependencies=[Depends(get_current_user())])
 app.include_router(document_router, prefix=f"{settings.API_V1_STR}/documents", tags=["documents"],
