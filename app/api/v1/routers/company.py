@@ -3,7 +3,7 @@ from fastapi.params import Depends
 from google.genai.live import AsyncSession
 
 from app.api.v1.schemas.company import CompanyInDB, CompanyCreate, CompanyUpdate
-from app.api.v1.services.company import get_all_companies, get_company, create_company, update_company, delete_company
+from app.api.v1.services.company_service import get_all_companies, get_company, create_company, update_company, delete_company
 from app.core.user_manager import get_current_user
 from app.db.models import User
 from app.db.session import get_async_session

@@ -9,9 +9,19 @@ from app.analysers.document_processor import DocumentProcessor
 from app.api.v1.services.policy_service import get_active_policies_by_company
 from app.core.ai.ai_client import gemini_client
 from app.core.ai.document_analysis import upload_file, initial_analysis, chat_with_document as ask_the_document
-from app.db.models import Document, AnalysisResult
+from app.db.models import Document, AnalysisResult, User, Company
 from app.utils.formatters import format_policies_and_rules_into_text
 
+
+async def get_analysis_results(db: AsyncSession, user: User):
+    if user.is_superuser:
+        query = select(AnalysisResult).order_by(AnalysisResult.id.desc())
+    else:
+        query = select(AnalysisResult).join(Document, Document.id == AnalysisResult.document_id).filter(
+            Document.company_id == user.company_id)
+
+    result = await db.execute(query)
+    return result.scalars().all()
 
 async def upload_document_to_gemini(db: AsyncSession, document_id: int) -> Document:
     result = await db.execute(select(Document).filter(Document.id == document_id))
@@ -20,12 +30,8 @@ async def upload_document_to_gemini(db: AsyncSession, document_id: int) -> Docum
     if not document:
         raise Exception("Document not found")
 
-    if document.gemini_name:
-        try:
-            gemini_client.files.get(name=document.gemini_name)
-            return document
-        except APIError as e:
-            logger.error(f"Error getting document {document_id} from Gemini: {e.code} - {e.message}")
+    if document.gemini_name and check_document_availability(document):
+        return document
 
     temp_file_created = False
     file_path = document.file_path
@@ -83,11 +89,20 @@ async def chat_with_document(db: AsyncSession, document_id: int, message: str):
     result = await db.execute(select(Document).filter(Document.id == document_id))
     document = result.scalar_one_or_none()
 
-    print(f"Chat with document {document_id}")
-
     if not document:
         raise Exception("Document not found")
     if not document.is_processed or document.gemini_name is None:
         raise Exception("Document is not processed yet")
+    if not check_document_availability(document):
+        document = await upload_document_to_gemini(db, document.id)
 
     return await ask_the_document(text=message, gemini_file_name=document.gemini_name, db=db)
+
+
+def check_document_availability(document: Document):
+    try:
+        gemini_client.files.get(name=document.gemini_name)
+        return True
+    except APIError as e:
+        logger.error(f"Error getting document {document.id} from Gemini: {e.code} - {e.message}")
+        return False

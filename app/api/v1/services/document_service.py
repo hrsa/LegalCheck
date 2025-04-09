@@ -2,6 +2,7 @@ import os
 import uuid
 
 from fastapi import BackgroundTasks, UploadFile
+from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -13,8 +14,8 @@ from app.db.models import Document, User
 DOCUMENT_STORAGE = os.path.join(settings.BASE_DIR, "storage/documents")
 
 
-async def save_document(db: AsyncSession, file: UploadFile, user: User, background_tasks: BackgroundTasks, company_id: int = None,) -> Document:
-
+async def save_document(db: AsyncSession, file: UploadFile, user: User, background_tasks: BackgroundTasks,
+                        company_id: int = None, ) -> Document:
     file_content = await file.read()
     document = DocumentCreate(
         filename=file.filename,
@@ -57,15 +58,40 @@ async def get_document(db: AsyncSession, document_id: int):
     return result.scalar_one_or_none()
 
 
+async def get_all_documents(db: AsyncSession, user: User, skip: int = 0, limit: int = 100):
+    if user.is_superuser:
+        query = select(Document).offset(skip).limit(limit)
+    else:
+        query = select(Document).filter(Document.company_id == user.company_id).offset(skip).limit(limit)
+
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
 async def ocr_document(document_id: int, db: AsyncSession) -> None:
     try:
         document = await db.get(Document, document_id)
 
         if not document:
-            print(f"Document {document.id} not found in DB during background processing")
+            logger.error(f"Document {document.id} not found in DB during background processing")
             return
 
         document.text_content = DocumentProcessor().process_document(document.file_path)
         await db.commit()
     except ValueError as e:
-        print(f"Error processing document {document_id}. {e}")
+        logger.error(f"Error processing document {document_id}. {e}")
+
+
+async def delete_document(db: AsyncSession, user: User, document_id: int):
+    document = await db.get(Document, document_id)
+
+    if not user.is_superuser and document.company_id != user.company_id:
+        raise Exception("You are not authorized to delete this document")
+
+    if not document:
+        raise Exception("Document not found")
+
+    if isinstance(document.file_path, str):
+        os.remove(document.file_path)
+    await db.delete(document)
+    await db.commit()
