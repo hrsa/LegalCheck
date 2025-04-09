@@ -26,17 +26,15 @@ def upgrade() -> None:
     op.create_table('companies',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
-    sa.Column('registration_number', sa.String(), nullable=False),
-    sa.Column('country', sa.String(), nullable=False),
-    sa.Column('address', sa.String(), nullable=False),
-    sa.Column('risk_score', sa.Integer(), nullable=False),
+    sa.Column('registration_number', sa.String(), nullable=True),
+    sa.Column('country', sa.String(), nullable=True),
+    sa.Column('address', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_companies_id'), 'companies', ['id'], unique=False)
     op.create_index(op.f('ix_companies_name'), 'companies', ['name'], unique=False)
-    op.create_index(op.f('ix_companies_registration_number'), 'companies', ['registration_number'], unique=False)
     op.create_table('embeddings',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('content_type', sa.String(), nullable=False),
@@ -95,6 +93,7 @@ def upgrade() -> None:
     op.create_table('analysis_results',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('document_id', sa.Integer(), nullable=False),
+    sa.Column('title', sa.String(), nullable=True),
     sa.Column('company_name', sa.String(), nullable=True),
     sa.Column('conflicts', sa.JSON(), nullable=True),
     sa.Column('risks', sa.JSON(), nullable=True),
@@ -153,7 +152,6 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_embeddings_id'), table_name='embeddings')
     op.drop_index(op.f('ix_embeddings_content_id'), table_name='embeddings')
     op.drop_table('embeddings')
-    op.drop_index(op.f('ix_companies_registration_number'), table_name='companies')
     op.drop_index(op.f('ix_companies_name'), table_name='companies')
     op.drop_index(op.f('ix_companies_id'), table_name='companies')
     op.drop_table('companies')

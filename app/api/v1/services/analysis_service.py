@@ -1,10 +1,13 @@
 import os
 
+from google.genai.errors import APIError
+from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.analysers.document_processor import DocumentProcessor
 from app.api.v1.services.policy_service import get_active_policies_by_company
+from app.core.ai.ai_client import gemini_client
 from app.core.ai.document_analysis import upload_file, initial_analysis, chat_with_document as ask_the_document
 from app.db.models import Document, AnalysisResult
 from app.utils.formatters import format_policies_and_rules_into_text
@@ -18,8 +21,11 @@ async def upload_document_to_gemini(db: AsyncSession, document_id: int) -> Docum
         raise Exception("Document not found")
 
     if document.gemini_name:
-        assert isinstance(document, Document)
-        return document
+        try:
+            gemini_client.files.get(name=document.gemini_name)
+            return document
+        except APIError as e:
+            logger.error(f"Error getting document {document_id} from Gemini: {e.code} - {e.message}")
 
     temp_file_created = False
     file_path = document.file_path
@@ -44,21 +50,17 @@ async def upload_document_to_gemini(db: AsyncSession, document_id: int) -> Docum
 
     await db.commit()
     await db.refresh(document)
-    assert isinstance(document, Document)
-
     return document
 
 
 async def analyze_document(db: AsyncSession, document: Document):
-    print("Getting policies and rules")
     policies_and_rules = await get_active_policies_by_company(db, company_id=document.company_id)
-    print("got policies_and_rules")
-    print(policies_and_rules)
     pr_text = format_policies_and_rules_into_text(policies_and_rules)
     analysis_data = initial_analysis(document.gemini_name, pr_text)
 
     analysis_result_db = AnalysisResult(
         document_id=document.id,
+        title=analysis_data.title,
         company_name=analysis_data.company_name,
         conflicts=[conflict.model_dump() for conflict in analysis_data.conflicts] if analysis_data.conflicts else [],
         risks=[risk.model_dump() for risk in analysis_data.risks] if analysis_data.risks else [],
@@ -66,6 +68,8 @@ async def analyze_document(db: AsyncSession, document: Document):
                          analysis_data.missing_clauses] if analysis_data.missing_clauses else [],
         suggestions=[suggestion.model_dump() for suggestion in
                      analysis_data.suggestions] if analysis_data.suggestions else [],
+        payment_terms=[payment_term.model_dump() for payment_term in
+                       analysis_data.payment_terms] if analysis_data.payment_terms else [],
     )
 
     db.add(analysis_result_db)
@@ -75,7 +79,7 @@ async def analyze_document(db: AsyncSession, document: Document):
     return analysis_result_db
 
 
-async def chat_with_document(db:AsyncSession, document_id: int, message: str):
+async def chat_with_document(db: AsyncSession, document_id: int, message: str):
     result = await db.execute(select(Document).filter(Document.id == document_id))
     document = result.scalar_one_or_none()
 
