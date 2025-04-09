@@ -1,9 +1,8 @@
 import datetime
 
-from sqlalchemy import Column, Integer, String, DateTime, UniqueConstraint
 from pgvector.sqlalchemy import Vector
-from sqlalchemy.orm import Mapped
-from sqlalchemy.testing.schema import mapped_column
+from sqlalchemy import Integer, String, DateTime, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base_class import Base
 

@@ -3,7 +3,6 @@ from app.db.base_class import Base
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 import datetime
 
-
 class Document(Base):
     __tablename__ = "documents"
 

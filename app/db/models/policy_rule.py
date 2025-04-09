@@ -5,7 +5,6 @@ from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from app.api.v1.schemas.rule import RuleType, Severity
 from app.db.base_class import Base
-from app.db.models import Policy, Embedding
 
 
 class PolicyRule(Base):
@@ -22,8 +21,8 @@ class PolicyRule(Base):
     updated_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc),
                         onupdate=lambda: datetime.datetime.now(datetime.timezone.utc))
 
-    policy: Mapped[Policy] = relationship("Policy", back_populates="rules")
-    embedding: Mapped[Embedding | None] = relationship(
+    policy: Mapped["Policy"] = relationship("Policy", back_populates="rules")
+    embedding: Mapped["Embedding"] = relationship(
         "Embedding",
         primaryjoin="and_(foreign(Embedding.content_id)==PolicyRule.id, Embedding.content_type=='rule')",
         uselist=False,

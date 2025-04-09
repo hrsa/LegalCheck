@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, relationship, declared_attr
 
 from app.db.base_class import Base
-from app.db.models import Company
 from app.db.session import get_async_session
 
 
@@ -17,7 +16,8 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     last_name: Mapped[str]
     company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"))
 
-    company: Mapped[Company] = relationship("Company", back_populates="users")
+    company: Mapped["Company"] = relationship("Company", back_populates="users")
+    checklists: Mapped[list["Checklist"]] = relationship("Checklist", back_populates="user")
 
 
 class AccessToken(SQLAlchemyBaseAccessTokenTableUUID, Base):

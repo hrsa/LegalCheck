@@ -1,9 +1,11 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, Boolean, JSON
+import datetime
+
+from sqlalchemy import Integer, String, Text, ForeignKey, DateTime, Boolean
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from app.api.v1.schemas.policy import PolicyType
 from app.db.base_class import Base
-from sqlalchemy.orm import relationship, Mapped, mapped_column
-import datetime
+
 
 
 class Policy(Base):
