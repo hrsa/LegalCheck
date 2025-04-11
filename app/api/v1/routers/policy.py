@@ -3,7 +3,7 @@ from fastapi.params import Depends
 from google.genai.live import AsyncSession
 
 from app.api.v1.schemas.policy import PolicyInDB, PolicyCreate, PolicyUpdate, PolicyWithRules
-from app.api.v1.services.policy_service import get_policies, get_policy, create_policy, update_policy, delete_policy, \
+from app.api.v1.services.policy_service import get_policy, create_policy, update_policy, delete_policy, \
     get_active_policies_by_company
 from app.core.user_manager import get_current_user
 from app.db.models import User
@@ -36,15 +36,16 @@ async def create_policy_api(policy: PolicyCreate, user: User = Depends(get_curre
 
 @router.patch("/{policy_id}", response_model=PolicyInDB)
 async def update_policy_api(policy_id: int, policy: PolicyUpdate, db: AsyncSession = Depends(get_async_session)):
-    updated_policy = await update_policy(db, policy_id, policy_data=policy)
-    if updated_policy is None:
-        raise HTTPException(status_code=404, detail="Policy not found")
-    return updated_policy
+    try:
+        return await update_policy(db, policy_id, policy_data=policy)
+    except HTTPException as e:
+        raise e
 
 
 @router.delete("/{policy_id}/")
 async def delete_policy_api(policy_id: int, db: AsyncSession = Depends(get_async_session)):
-    result = await delete_policy(db, policy_id=policy_id)
-    if not result:
-        raise HTTPException(status_code=404, detail="Policy not found")
-    return {"detail": f"Policy {policy_id} deleted successfully."}
+    try:
+        await delete_policy(db, policy_id=policy_id)
+        return {"detail": f"Policy {policy_id} deleted successfully."}
+    except HTTPException as e:
+        raise e

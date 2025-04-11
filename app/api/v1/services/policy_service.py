@@ -1,3 +1,6 @@
+from http import HTTPStatus
+
+from fastapi import HTTPException
 from sqlalchemy import or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session, joinedload
@@ -47,7 +50,7 @@ async def create_policy(db: AsyncSession, user: User, policy: PolicyCreate):
 async def update_policy(db: AsyncSession, policy_id: int, policy_data: PolicyUpdate):
     db_policy = await get_policy(db, policy_id)
     if not db_policy:
-        return None
+        raise HTTPException(HTTPStatus.NOT_FOUND, detail="Policy not found")
     update_data = policy_data.model_dump(exclude_unset=True, exclude_none=True)
 
     for field, value in update_data.items():
@@ -60,8 +63,7 @@ async def update_policy(db: AsyncSession, policy_id: int, policy_data: PolicyUpd
 
 async def delete_policy(db: AsyncSession, policy_id: int):
     db_policy = await get_policy(db, policy_id)
-    if db_policy:
-        await db.delete(db_policy)
-        await db.commit()
-        return True
-    return False
+    if not db_policy:
+        raise HTTPException(HTTPStatus.NOT_FOUND, detail="Policy not found")
+    await db.delete(db_policy)
+    await db.commit()
