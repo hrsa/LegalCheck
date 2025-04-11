@@ -25,7 +25,4 @@ class Checklist(Base):
 
     user: Mapped["User"] = relationship("User", back_populates="checklists")
     company: Mapped["Company"] = relationship("Company", back_populates="checklists")
-    # rules: Mapped[list["PolicyRule"]] = relationship("PolicyRule",
-    #                                                  primaryjoin="PolicyRule.id.in_(func.json_array_elements(Checklist.ruleset))",
-    #                                                  viewonly=True
-    #                                                  )
+    analysis_results: Mapped[list["AnalysisResult"]] = relationship("AnalysisResult", back_populates="checklist")

@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.params import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.v1.schemas.checklist import ChecklistInDB, ChecklistCreate, ChecklistUpdate
+from app.api.v1.schemas.checklist import ChecklistInDB, ChecklistCreate, ChecklistUpdate, ChecklistWithRules
 from app.api.v1.schemas.rule import RuleInDB, RuleCreate, RuleUpdate
 from app.api.v1.services.checklist_service import get_all_checklists, get_checklist, create_checklist, update_checklist, \
     delete_checklist
@@ -15,7 +15,7 @@ from app.db.session import get_async_session
 router = APIRouter()
 
 
-@router.get("/", response_model=list[ChecklistInDB])
+@router.get("/", response_model=list[ChecklistWithRules])
 async def read_checklists(user: User = Depends(get_current_user()), db: AsyncSession = Depends(get_async_session)):
     return await get_all_checklists(db, user)
 

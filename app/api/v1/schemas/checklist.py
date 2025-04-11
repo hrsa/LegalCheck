@@ -1,7 +1,10 @@
 from datetime import datetime
 from enum import Enum
 from typing import Optional
-from pydantic import BaseModel
+
+from pydantic import BaseModel, computed_field
+
+from app.api.v1.schemas.rule import RuleInDB
 
 
 class ChecklistType(str, Enum):
@@ -30,3 +33,10 @@ class ChecklistInDB(ChecklistBase):
     ruleset: list[int]
     created_at: datetime
     updated_at: Optional[datetime] = None
+
+class ChecklistWithRules(ChecklistInDB):
+    rules: list[RuleInDB]
+
+    @computed_field
+    def type(self) -> ChecklistType:
+        return ChecklistType.company if self.company_id else ChecklistType.user

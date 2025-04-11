@@ -3,7 +3,9 @@ from sqlalchemy import or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.api.v1.schemas.checklist import ChecklistCreate, ChecklistUpdate, ChecklistType
+from app.api.v1.schemas.checklist import ChecklistCreate, ChecklistUpdate, ChecklistType, ChecklistWithRules, \
+    ChecklistInDB
+from app.api.v1.schemas.rule import RuleInDB
 from app.db.models import User, Company, Checklist, PolicyRule
 
 
@@ -13,9 +15,37 @@ async def get_all_checklists(db: AsyncSession, user: User):
     else:
         query = select(Checklist).filter(
             or_(user.company_id == Checklist.company_id, user.id == Checklist.user_id))
-
     result = await db.execute(query)
-    return result.scalars().all()
+    checklists = result.scalars().all()
+
+    all_rule_ids = set()
+    for checklist in checklists:
+        if checklist.ruleset:
+            all_rule_ids.update(checklist.ruleset)
+
+    rules_map = {}
+    if all_rule_ids:
+        rules_query = select(PolicyRule).where(PolicyRule.id.in_(list(all_rule_ids)))
+        rules_result = await db.execute(rules_query)
+        rules = rules_result.scalars().all()
+        rules_map = {rule.id: RuleInDB.model_validate(rule) for rule in rules}
+
+    enhanced_checklists = []
+    for checklist in checklists:
+        checklist_base = ChecklistInDB.model_validate(checklist)
+        rules = []
+        if checklist.ruleset:
+            rules = [rules_map.get(rule_id) for rule_id in checklist.ruleset if rule_id in rules_map]
+
+        checklist_with_rules = ChecklistWithRules(
+            **checklist_base.model_dump(),
+            rules=rules
+        )
+
+        enhanced_checklists.append(checklist_with_rules)
+
+    return enhanced_checklists
+
 
 async def get_checklist(db: AsyncSession, checklist_id: int):
     result = await db.execute(
@@ -72,6 +102,7 @@ async def create_checklist(db: AsyncSession, user: User, checklist_data: Checkli
     await db.refresh(db_checklist)
     return db_checklist
 
+
 async def update_checklist(db: AsyncSession, user: User, checklist_id: int, checklist_data: ChecklistUpdate):
     db_checklist = await get_checklist(db, checklist_id)
     if not db_checklist:
@@ -90,6 +121,7 @@ async def update_checklist(db: AsyncSession, user: User, checklist_id: int, chec
     await db.commit()
     await db.refresh(db_checklist)
     return db_checklist
+
 
 async def delete_checklist(db: AsyncSession, user: User, checklist_id: int):
     db_checklist = await get_checklist(db, checklist_id)
