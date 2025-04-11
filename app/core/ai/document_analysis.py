@@ -36,8 +36,9 @@ def initial_analysis(file_name, policies_and_rules):
 
     response = gemini_client.models.generate_content(
         model="gemini-2.0-flash",
-        contents=[file, "\n\n", complete_prompt],
+        contents=[file, "\n\n", "Analyze the document."],
         config={
+            "system_instruction": complete_prompt,
             'response_mime_type': 'application/json',
             'response_schema': AnalysisResult,
         }

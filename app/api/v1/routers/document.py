@@ -11,7 +11,7 @@ router = APIRouter()
 
 
 @router.post("/", response_model=DocumentInDB)
-async def upload_document(background_tasks: BackgroundTasks, company_id: int = Form(...), file: UploadFile = File(...),
+async def upload_document(background_tasks: BackgroundTasks, company_id: int = Form(None), file: UploadFile = File(...),
                           db: AsyncSession = Depends(get_async_session), user: User = Depends(get_current_user())):
     return await save_document(db, file, user, background_tasks, company_id)
 
@@ -35,5 +35,5 @@ async def remove_document(document_id: int, user: User = Depends(get_current_use
     try:
         await delete_document(db, user, document_id)
         return {"detail": f"Document {document_id} deleted successfully."}
-    except Exception as e:
-        return {"detail": f"Error deleting document {document_id}: {str(e)}"}
+    except HTTPException as e:
+        raise e

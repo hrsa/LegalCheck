@@ -1,8 +1,10 @@
 import os
 import uuid
+from http import HTTPStatus
 
-from fastapi import BackgroundTasks, UploadFile
+from fastapi import BackgroundTasks, UploadFile, HTTPException
 from loguru import logger
+from pyasn1_modules.rfc5934 import StatusCodeList
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -26,6 +28,8 @@ async def save_document(db: AsyncSession, file: UploadFile, user: User, backgrou
 
     if user.is_superuser:
         document.company_id = company_id
+    else:
+        document.company_id = user.company_id
 
     if not os.path.exists(DOCUMENT_STORAGE):
         os.makedirs(DOCUMENT_STORAGE)
@@ -60,9 +64,9 @@ async def get_document(db: AsyncSession, document_id: int):
 
 async def get_all_documents(db: AsyncSession, user: User, skip: int = 0, limit: int = 100):
     if user.is_superuser:
-        query = select(Document).offset(skip).limit(limit)
+        query = select(Document).offset(skip).limit(limit).order_by(Document.id.desc())
     else:
-        query = select(Document).filter(Document.company_id == user.company_id).offset(skip).limit(limit)
+        query = select(Document).filter(Document.company_id == user.company_id).offset(skip).limit(limit).order_by(Document.id.desc())
 
     result = await db.execute(query)
     return result.scalars().all()
@@ -86,10 +90,10 @@ async def delete_document(db: AsyncSession, user: User, document_id: int):
     document = await db.get(Document, document_id)
 
     if not user.is_superuser and document.company_id != user.company_id:
-        raise Exception("You are not authorized to delete this document")
+        raise HTTPException(HTTPStatus.UNAUTHORIZED, "You are not authorized to delete this document")
 
     if not document:
-        raise Exception("Document not found")
+        raise HTTPException(HTTPStatus.NOT_FOUND, "Document not found")
 
     if isinstance(document.file_path, str):
         os.remove(document.file_path)

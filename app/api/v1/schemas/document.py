@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class DocumentBase(BaseModel, from_attributes = True):
@@ -15,6 +15,11 @@ class DocumentCreate(DocumentBase):
 
 class DocumentInDB(DocumentBase):
     id: int
-    file_path: str
+    filename: str
     is_processed: bool
     created_at: datetime
+
+    @field_validator('filename', mode='after')
+    @classmethod
+    def simplify_filename(cls, v: str) -> str:
+        return v[37:]
