@@ -1,19 +1,28 @@
 import os
+from http import HTTPStatus
+from typing import Optional, List
 
+from fastapi import HTTPException
 from google.genai.errors import APIError
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import joinedload
 
 from app.analysers.document_processor import DocumentProcessor
+from app.api.v1.schemas.analysis import AnalysisResultInDb
+from app.api.v1.schemas.policy import PolicyWithRules
+from app.api.v1.schemas.rule import RuleInDB
+from app.api.v1.services.checklist_service import get_checklist
 from app.api.v1.services.policy_service import get_active_policies_by_company
+from app.api.v1.services.rule_service import get_rule
 from app.core.ai.ai_client import gemini_client
 from app.core.ai.document_analysis import upload_file, initial_analysis, chat_with_document as ask_the_document
-from app.db.models import Document, AnalysisResult, User, Company
+from app.db.models import Document, AnalysisResult, User, Company, Policy, PolicyRule
 from app.utils.formatters import format_policies_and_rules_into_text
 
 
-async def get_analysis_results(db: AsyncSession, user: User):
+async def get_all_analysis_results(db: AsyncSession, user: User):
     if user.is_superuser:
         query = select(AnalysisResult).order_by(AnalysisResult.id.desc())
     else:
@@ -22,6 +31,25 @@ async def get_analysis_results(db: AsyncSession, user: User):
 
     result = await db.execute(query)
     return result.scalars().all()
+
+
+async def get_document_analysis_results(db: AsyncSession, user: User, document_id: int):
+    result = await db.execute(select(AnalysisResult).filter(AnalysisResult.document_id == document_id).options(
+        joinedload(AnalysisResult.checklist)))
+    db_results = result.scalars().all()
+
+    analysis_results_with_checklist_names = []
+
+    for item in db_results:
+        pydantic_item = AnalysisResultInDb.model_validate(item)
+
+        if item.checklist_id:
+            pydantic_item.checklist_name = item.checklist.name
+
+        analysis_results_with_checklist_names.append(pydantic_item)
+
+    return analysis_results_with_checklist_names
+
 
 async def upload_document_to_gemini(db: AsyncSession, document_id: int) -> Document:
     result = await db.execute(select(Document).filter(Document.id == document_id))
@@ -59,13 +87,61 @@ async def upload_document_to_gemini(db: AsyncSession, document_id: int) -> Docum
     return document
 
 
-async def analyze_document(db: AsyncSession, document: Document):
-    policies_and_rules = await get_active_policies_by_company(db, company_id=document.company_id)
+async def get_policies_and_rules_from_checklist(db: AsyncSession, checklist_id: int):
+    policies_and_rules = []
+
+    checklist = await get_checklist(db, checklist_id)
+    if not checklist:
+        raise HTTPException(status_code=404, detail="Checklist not found")
+
+    if checklist.ruleset:
+        rule_ids = checklist.ruleset
+
+        rules_query = select(PolicyRule).filter(PolicyRule.id.in_(rule_ids))
+        rules_result = await db.execute(rules_query)
+        rules = rules_result.scalars().all()
+
+        policy_ids = set(rule.policy_id for rule in rules)
+
+        policies_query = select(Policy).filter(Policy.id.in_(policy_ids)).options(
+            joinedload(Policy.rules)
+        )
+        policies_result = await db.execute(policies_query)
+        policies = policies_result.unique().scalars().all()
+
+        for policy in policies:
+            filtered_rules = [rule for rule in policy.rules if rule.id in rule_ids]
+
+            policy_with_rules = PolicyWithRules(
+                id=policy.id,
+                name=policy.name,
+                description=policy.description,
+                policy_type=policy.policy_type,
+                source_url=policy.source_url,
+                is_active=policy.is_active,
+                company_id=policy.company_id,
+                created_at=policy.created_at,
+                updated_at=policy.updated_at,
+                rules=[RuleInDB.model_validate(rule) for rule in filtered_rules]
+            )
+
+            policies_and_rules.append(policy_with_rules)
+
+    return policies_and_rules
+
+
+async def analyze_document(db: AsyncSession, document: Document, checklist_id: Optional[int] = None):
+    if checklist_id:
+        policies_and_rules = await get_policies_and_rules_from_checklist(db, checklist_id)
+    else:
+        policies_and_rules = await get_active_policies_by_company(db, company_id=document.company_id)
+
     pr_text = format_policies_and_rules_into_text(policies_and_rules)
     analysis_data = initial_analysis(document.gemini_name, pr_text)
 
     analysis_result_db = AnalysisResult(
         document_id=document.id,
+        checklist_id=checklist_id,
         title=analysis_data.title,
         company_name=analysis_data.company_name,
         conflicts=[conflict.model_dump() for conflict in analysis_data.conflicts] if analysis_data.conflicts else [],

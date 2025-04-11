@@ -12,6 +12,7 @@ class AnalysisResult(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     document_id: Mapped[int] = mapped_column(ForeignKey("documents.id"))
+    checklist_id: Mapped[int] = mapped_column(ForeignKey("checklists.id"), nullable=True)
     title: Mapped[str | None] = mapped_column(String, nullable=True)
     company_name: Mapped[str | None] = mapped_column(String, nullable=True)
     conflicts: Mapped[list[Conflict] | None] = mapped_column(JSON, nullable=True)
@@ -29,3 +30,4 @@ class AnalysisResult(Base):
                                                                      datetime.timezone.utc))
 
     document: Mapped["Document"] = relationship("Document", back_populates="analysis_results")
+    checklist: Mapped["Checklist"] = relationship("Checklist", back_populates="analysis_results")

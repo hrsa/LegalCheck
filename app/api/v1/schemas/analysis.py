@@ -3,8 +3,10 @@ from typing import List, Optional
 
 from pydantic import BaseModel
 
+class AnalysisRequest(BaseModel):
+    checklist_id: int | None = None
 
-class Conflict(BaseModel, from_attributes=True):
+class Conflict(BaseModel):
     policy_name: str
     conflict_detail: str
 
@@ -35,9 +37,10 @@ class PaymentTerm(BaseModel):
     notes: Optional[str]
 
 
-class AnalysisResult(BaseModel):
+class AnalysisResult(BaseModel, from_attributes=True):
     document_id: int
     title: str
+    checklist_id: Optional[int] = None
     company_name: str
     conflicts: List[Conflict]
     risks: List[Risk]
@@ -50,6 +53,7 @@ class AnalysisResultInDb(AnalysisResult):
     id: int
     document_id: int
     title: Optional[str] = None
+    checklist_name: Optional[str] = None
     company_name: Optional[str] = None
     conflicts: Optional[List[Conflict]] = None
     risks: Optional[List[Risk]] = None
