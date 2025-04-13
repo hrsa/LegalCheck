@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import ForeignKey, JSON, DateTime, String
 from sqlalchemy.orm import relationship, Mapped, mapped_column
@@ -20,14 +20,14 @@ class AnalysisResult(Base):
     missing_clauses: Mapped[list[MissingClause] | None] = mapped_column(JSON, nullable=True)
     suggestions: Mapped[list[Suggestion] | None] = mapped_column(JSON, nullable=True)
     payment_terms: Mapped[list[PaymentTerm] | None] = mapped_column(JSON, nullable=True)
-    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True),
-                                                          default=lambda: datetime.datetime.now(datetime.timezone.utc)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),
+                                                          default=lambda: datetime.now(timezone.utc)
                                                           )
-    updated_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True),
-                                                                 default=lambda: datetime.datetime.now(
-                                                                     datetime.timezone.utc),
-                                                                 onupdate=lambda: datetime.datetime.now(
-                                                                     datetime.timezone.utc))
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True),
+                                                                 default=lambda: datetime.now(
+                                                                     timezone.utc),
+                                                                 onupdate=lambda: datetime.now(
+                                                                     timezone.utc))
 
     document: Mapped["Document"] = relationship("Document", back_populates="analysis_results")
     checklist: Mapped["Checklist"] = relationship("Checklist", back_populates="analysis_results")

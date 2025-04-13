@@ -4,11 +4,12 @@ from google.genai.live import AsyncSession
 
 from app.api.v1.schemas.company import CompanyInDB, CompanyCreate, CompanyUpdate
 from app.api.v1.services.company_service import get_all_companies, get_company, create_company, update_company, delete_company
+from app.core.config import settings
 from app.core.user_manager import get_current_user
 from app.db.models import User
 from app.db.session import get_async_session
 
-router = APIRouter()
+router = APIRouter(prefix=f"{settings.API_V1_STR}/companies", tags=["companies"], dependencies=[Depends(get_current_user())])
 
 
 @router.get("/", response_model=list[CompanyInDB])

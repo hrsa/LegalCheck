@@ -1,5 +1,4 @@
-import datetime
-
+from datetime import datetime, timezone
 from sqlalchemy import String, DateTime
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
@@ -15,14 +14,14 @@ class Company(Base):
     registration_number: Mapped[str | None] = mapped_column(String, nullable=True)
     country: Mapped[str | None] = mapped_column(String, nullable=True)
     address: Mapped[str | None] = mapped_column(String, nullable=True)
-    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True),
-                                                          default=lambda: datetime.datetime.now(datetime.timezone.utc)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),
+                                                          default=lambda: datetime.now(timezone.utc)
                                                           )
-    updated_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True),
-                                                                 default=lambda: datetime.datetime.now(
-                                                                     datetime.timezone.utc),
-                                                                 onupdate=lambda: datetime.datetime.now(
-                                                                     datetime.timezone.utc))
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True),
+                                                                 default=lambda: datetime.now(
+                                                                     timezone.utc),
+                                                                 onupdate=lambda: datetime.now(
+                                                                     timezone.utc))
 
     documents: Mapped[list["Document"]] = relationship("Document", back_populates="company")
     policies: Mapped[list["Policy"]] = relationship("Policy", back_populates="company")

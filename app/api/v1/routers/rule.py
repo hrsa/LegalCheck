@@ -1,16 +1,16 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.params import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
 
 from app.api.v1.schemas.rule import RuleInDB, RuleCreate, RuleUpdate
 from app.api.v1.services.rule_service import get_rules, get_rule, create_rule as create_rule_service, \
     update_rule as update_rule_service, delete_rule as delete_rule_service, find_rules
+from app.core.config import settings
 from app.core.user_manager import get_current_user
 from app.db.models import User
 from app.db.session import get_async_session
 
-router = APIRouter()
+router = APIRouter(prefix=f"{settings.API_V1_STR}/rules", tags=["rules"])
 
 
 @router.get("/policy/{policy_id}", response_model=list[RuleInDB])

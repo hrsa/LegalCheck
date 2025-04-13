@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import Integer, String, Text, ForeignKey, DateTime, JSON
 from sqlalchemy.orm import relationship, Mapped, mapped_column
@@ -16,10 +16,10 @@ class PolicyRule(Base):
     description: Mapped[str] = mapped_column(Text)
     severity: Mapped[Severity] = mapped_column(String)  # high, medium, low
     keywords: Mapped[list[str]] = mapped_column(JSON)
-    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
 )
-    updated_at: Mapped[datetime.datetime | None] = mapped_column(DateTime(timezone=True), default=lambda: datetime.datetime.now(datetime.timezone.utc),
-                        onupdate=lambda: datetime.datetime.now(datetime.timezone.utc))
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc),
+                        onupdate=lambda: datetime.now(timezone.utc))
 
     policy: Mapped["Policy"] = relationship("Policy", back_populates="rules")
     embedding: Mapped["Embedding"] = relationship(

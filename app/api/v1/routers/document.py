@@ -3,11 +3,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.schemas.document import DocumentInDB, DocumentCreate
 from app.api.v1.services.document_service import save_document, get_document, get_all_documents, delete_document
+from app.core.config import settings
 from app.core.user_manager import get_current_user
 from app.db.models import User
 from app.db.session import get_async_session
 
-router = APIRouter()
+router = APIRouter(prefix=f"{settings.API_V1_STR}/documents", tags=["documents"],
+                   dependencies=[Depends(get_current_user())])
 
 
 @router.post("/", response_model=DocumentInDB)

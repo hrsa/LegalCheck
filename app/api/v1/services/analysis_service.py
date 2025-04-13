@@ -1,6 +1,6 @@
 import os
 from http import HTTPStatus
-from typing import Optional, List
+from typing import Optional
 
 from fastapi import HTTPException
 from google.genai.errors import APIError
@@ -11,14 +11,16 @@ from sqlalchemy.orm import joinedload
 
 from app.analysers.document_processor import DocumentProcessor
 from app.api.v1.schemas.analysis import AnalysisResultInDb
+from app.api.v1.schemas.conversation import ConversationCreate, MessageAuthor
 from app.api.v1.schemas.policy import PolicyWithRules
 from app.api.v1.schemas.rule import RuleInDB
 from app.api.v1.services.checklist_service import get_checklist
+from app.api.v1.services.conversation_service import get_conversation, create_conversation, add_message, \
+    get_recent_messages
 from app.api.v1.services.policy_service import get_active_policies_by_company
-from app.api.v1.services.rule_service import get_rule
 from app.core.ai.ai_client import gemini_client
 from app.core.ai.document_analysis import upload_file, initial_analysis, chat_with_document as ask_the_document
-from app.db.models import Document, AnalysisResult, User, Company, Policy, PolicyRule
+from app.db.models import Document, AnalysisResult, User, Policy, PolicyRule
 from app.utils.formatters import format_policies_and_rules_into_text
 
 
@@ -29,8 +31,14 @@ async def get_all_analysis_results(db: AsyncSession, user: User):
         query = select(AnalysisResult).join(Document, Document.id == AnalysisResult.document_id).filter(
             Document.company_id == user.company_id)
 
-    result = await db.execute(query)
-    return result.scalars().all()
+    results = await db.execute(query.options(joinedload(AnalysisResult.checklist)))
+    db_results = results.scalars().all()
+    return [
+        AnalysisResultInDb.model_validate(item, from_attributes=True).model_copy(
+            update={"checklist_name": item.checklist.name if item.checklist_id else None}
+        )
+        for item in db_results
+    ]
 
 
 async def get_document_analysis_results(db: AsyncSession, user: User, document_id: int):
@@ -38,17 +46,12 @@ async def get_document_analysis_results(db: AsyncSession, user: User, document_i
         joinedload(AnalysisResult.checklist)))
     db_results = result.scalars().all()
 
-    analysis_results_with_checklist_names = []
-
-    for item in db_results:
-        pydantic_item = AnalysisResultInDb.model_validate(item)
-
-        if item.checklist_id:
-            pydantic_item.checklist_name = item.checklist.name
-
-        analysis_results_with_checklist_names.append(pydantic_item)
-
-    return analysis_results_with_checklist_names
+    return [
+        AnalysisResultInDb.model_validate(item, from_attributes=True).model_copy(
+            update={"checklist_name": item.checklist.name if item.checklist_id else None}
+        )
+        for item in db_results
+    ]
 
 
 async def upload_document_to_gemini(db: AsyncSession, document_id: int) -> Document:
@@ -161,18 +164,28 @@ async def analyze_document(db: AsyncSession, document: Document, checklist_id: O
     return analysis_result_db
 
 
-async def chat_with_document(db: AsyncSession, document_id: int, message: str):
+async def chat_with_document(db: AsyncSession, document_id: int, user: User, message: str):
     result = await db.execute(select(Document).filter(Document.id == document_id))
     document = result.scalar_one_or_none()
 
     if not document:
-        raise Exception("Document not found")
+        raise HTTPException(HTTPStatus.NOT_FOUND, "Document not found")
     if not document.is_processed or document.gemini_name is None:
-        raise Exception("Document is not processed yet")
+        raise HTTPException(HTTPStatus.CONFLICT, "Document is not processed yet")
     if not check_document_availability(document):
         document = await upload_document_to_gemini(db, document.id)
 
-    return await ask_the_document(text=message, gemini_file_name=document.gemini_name, db=db)
+    conversation = await get_conversation(db, document_id=document_id, user_id=user.id)
+    if not conversation:
+        conversation = await create_conversation(db, ConversationCreate(document_id=document_id, user_id=user.id))
+
+    await add_message(db, conversation.id, message, MessageAuthor.user)
+
+    response = await ask_the_document(text=message, gemini_file_name=document.gemini_name, db=db)
+
+    answer = await add_message(db, conversation.id, response, MessageAuthor.legalcheck)
+
+    return answer
 
 
 def check_document_availability(document: Document):

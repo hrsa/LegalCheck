@@ -17,6 +17,7 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"))
 
     company: Mapped["Company"] = relationship("Company", back_populates="users")
+    conversations: Mapped[list["Conversation"]] = relationship("Conversation", back_populates="user")
     checklists: Mapped[list["Checklist"]] = relationship("Checklist", back_populates="user")
 
 

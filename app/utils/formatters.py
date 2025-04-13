@@ -1,4 +1,5 @@
 from app.api.v1.schemas.policy import PolicyWithRules
+from app.db.models import Message
 
 
 def format_policies_and_rules_into_text(policies: list[PolicyWithRules]) -> str:
@@ -22,6 +23,13 @@ def format_policies_and_rules_into_text(policies: list[PolicyWithRules]) -> str:
         formatted_policies.append("\n".join(policy_info))
 
     return "\n\n---\n\n".join(formatted_policies)
+
+
+def format_messages_history(messages: list[Message]) -> str:
+    formatted_messages = []
+    for message in messages:
+            formatted_messages.append(f"({message.created_at}){message.author}: {message.content}")
+    return "\n".join(formatted_messages)
 
 
 def print_model(model, label="Model"):

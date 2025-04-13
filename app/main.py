@@ -11,11 +11,13 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.routers.analysis import router as analysis_router
+from app.api.v1.routers.conversation import router as conversation_router
 from app.api.v1.routers.document import router as document_router
 from app.api.v1.routers.policy import router as policy_router
 from app.api.v1.routers.rule import router as rule_router
 from app.api.v1.routers.company import router as company_router
 from app.api.v1.routers.checklist import router as checklist_router
+from app.api.v1.routers.websocket import router as websocket_router
 from app.core.auth import auth_backend
 from app.core.config import settings
 
@@ -59,13 +61,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(checklist_router, prefix=f"{settings.API_V1_STR}/checklists", tags=["checklists"], dependencies=[Depends(get_current_user())])
-app.include_router(company_router, prefix=f"{settings.API_V1_STR}/companies", tags=["companies"], dependencies=[Depends(get_current_user())])
-app.include_router(policy_router, prefix=f"{settings.API_V1_STR}/policies", tags=["policies"], dependencies=[Depends(get_current_user())])
-app.include_router(document_router, prefix=f"{settings.API_V1_STR}/documents", tags=["documents"],
-                   dependencies=[Depends(get_current_user())])
-app.include_router(analysis_router, prefix=f"{settings.API_V1_STR}/documents", tags=["analysis"], dependencies=[Depends(get_current_user())])
-app.include_router(rule_router, prefix=f"{settings.API_V1_STR}/rules", tags=["rules"])
+app.include_router(websocket_router)
+app.include_router(checklist_router)
+app.include_router(company_router)
+app.include_router(policy_router)
+app.include_router(document_router)
+app.include_router(analysis_router)
+app.include_router(rule_router)
+app.include_router(conversation_router)
 app.include_router(fastapi_users.get_auth_router(auth_backend), prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
 app.include_router(fastapi_users.get_register_router(user_schema=UserBase, user_create_schema=UserCreate),
                    prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])

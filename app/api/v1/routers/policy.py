@@ -5,11 +5,12 @@ from google.genai.live import AsyncSession
 from app.api.v1.schemas.policy import PolicyInDB, PolicyCreate, PolicyUpdate, PolicyWithRules
 from app.api.v1.services.policy_service import get_policy, create_policy, update_policy, delete_policy, \
     get_active_policies_by_company
+from app.core.config import settings
 from app.core.user_manager import get_current_user
 from app.db.models import User
 from app.db.session import get_async_session
 
-router = APIRouter()
+router = APIRouter(prefix=f"{settings.API_V1_STR}/policies", tags=["policies"], dependencies=[Depends(get_current_user())])
 
 
 # @router.get("/", response_model=list[PolicyInDB])
