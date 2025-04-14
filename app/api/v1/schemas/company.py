@@ -11,6 +11,7 @@ class CompanyBase(BaseModel, from_attributes = True):
 
 
 class CompanyCreate(CompanyBase):
+    invite_code: Optional[str] = None
     pass
 
 class CompanyUpdate(CompanyBase):
@@ -18,6 +19,7 @@ class CompanyUpdate(CompanyBase):
     registration_number: Optional[str] = None
     country: Optional[str] = None
     address: Optional[str] = None
+    invite_code: Optional[str] = None
 
 
 class CompanyInDB(CompanyBase):

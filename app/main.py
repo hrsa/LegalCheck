@@ -18,6 +18,7 @@ from app.api.v1.routers.rule import router as rule_router
 from app.api.v1.routers.company import router as company_router
 from app.api.v1.routers.checklist import router as checklist_router
 from app.api.v1.routers.websocket import router as websocket_router
+from app.api.v1.routers.user import router as register_router
 from app.core.auth import auth_backend
 from app.core.config import settings
 
@@ -69,9 +70,10 @@ app.include_router(document_router)
 app.include_router(analysis_router)
 app.include_router(rule_router)
 app.include_router(conversation_router)
+app.include_router(register_router)
 app.include_router(fastapi_users.get_auth_router(auth_backend), prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
-app.include_router(fastapi_users.get_register_router(user_schema=UserBase, user_create_schema=UserCreate),
-                   prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
+# app.include_router(fastapi_users.get_register_router(user_schema=UserBase, user_create_schema=UserCreate),
+#                    prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
 app.include_router(fastapi_users.get_users_router(user_schema=UserBase, user_update_schema=UserUpdate),
                    prefix=f"{settings.API_V1_STR}/users", tags=["users"],
                    dependencies=[Depends(get_current_user(active=True))])

@@ -14,6 +14,7 @@ class Company(Base):
     registration_number: Mapped[str | None] = mapped_column(String, nullable=True)
     country: Mapped[str | None] = mapped_column(String, nullable=True)
     address: Mapped[str | None] = mapped_column(String, nullable=True)
+    invite_code: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),
                                                           default=lambda: datetime.now(timezone.utc)
                                                           )
