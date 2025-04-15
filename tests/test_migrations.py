@@ -84,7 +84,8 @@ async def create_initial_company(db: AsyncSession):
         name="Client Company",
         registration_number="1234567890",
         address="123 Main Street, New York, NY 10001",
-        country="USA"
+        country="USA",
+        invite_code="invitation"
     )
     db.add(company)
     await db.commit()

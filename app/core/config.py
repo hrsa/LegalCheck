@@ -7,7 +7,7 @@ from typing import Optional
 BASE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-class Settings(BaseSettings, env_file=os.getenv("ENV_FILE", ".env"), case_sensitive=True):
+class Settings(BaseSettings, env_file=os.getenv("ENV_FILE", ".env"), case_sensitive=True, extra='allow'):
 
     @property
     def TESTING(self):
@@ -19,8 +19,8 @@ class Settings(BaseSettings, env_file=os.getenv("ENV_FILE", ".env"), case_sensit
     LOG_FILE_PATH: str = os.path.join(BASE, "logs/app.log")
     BASE_DIR: str = BASE
     SECRET_KEY: str
+    APP_ENV: str
 
-    # Sensitive or environment-specific settings
     OPENAI_API_KEY: str
     GEMINI_API_KEY: str
     SENTRY_DSN_URL: Optional[str] = None
@@ -34,7 +34,7 @@ class Settings(BaseSettings, env_file=os.getenv("ENV_FILE", ".env"), case_sensit
 
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_SECONDS: int = 3600
+    ACCESS_TOKEN_EXPIRE_SECONDS: int = 36000
 
     UPLOAD_DIR: str = "uploads"
     DOCUMENT_STORAGE_PATH: str = os.path.join(UPLOAD_DIR, "documents")

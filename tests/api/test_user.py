@@ -11,20 +11,19 @@ async def test_register_user(async_client):
         "password": "mysecurepassword123",
         "first_name": "Tester",
         "last_name": "De Test",
-        "company_id": 1
+        "invite_code": "invitation"
     }
-    print("let's test the user!")
-    response = await async_client.post(f"{settings.API_V1_STR}/auth/register", json=payload)
-    response_json = response.json()
-    print(response_json)
-
+    response = await async_client.post(f"{settings.API_V1_STR}/register/", json=payload)
     assert response.status_code == 201, f"Unexpected status code: {response.status_code}"
+
+    response_json = response.json()
+
     assert "id" in response_json, "Response missing user id"
     assert response_json["email"] == payload["email"]
     assert response_json["first_name"] == payload["first_name"]
     assert response_json["last_name"] == payload["last_name"]
     assert "password" not in response_json
-    assert response_json["company_id"] == payload["company_id"]
+    assert response_json["company_id"] == 1
     assert response_json["is_superuser"] == False
     assert response_json["is_active"] == True
 
@@ -57,9 +56,9 @@ async def test_me_route(async_client):
         "password": "test123",
         "first_name": "Second User",
         "last_name": "De Test",
-        "company_id": 1
+        "invite_code": "invitation"
     }
-    await async_client.post(f"{settings.API_V1_STR}/auth/register", json=new_user_payload)
+    await async_client.post(f"{settings.API_V1_STR}/register/", json=new_user_payload)
 
     unauthorized_response = await async_client.get(f"{settings.API_V1_STR}/users/me", cookies=None)
     assert unauthorized_response.status_code == 401, f"Unexpected status code: {unauthorized_response.status_code}"
@@ -78,7 +77,7 @@ async def test_me_route(async_client):
     assert response.json()["email"] == new_user_payload["email"]
     assert response.json()["first_name"] == new_user_payload["first_name"]
     assert response.json()["last_name"] == new_user_payload["last_name"]
-    assert response.json()["company_id"] == new_user_payload["company_id"]
+    assert response.json()["company_id"] == 1
     assert response.json()["is_superuser"] == False
 
 @pytest.mark.asyncio(loop_scope="session")

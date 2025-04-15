@@ -12,15 +12,15 @@ from app.db.session import get_async_session
 router = APIRouter(prefix=f"{settings.API_V1_STR}/companies", tags=["companies"], dependencies=[Depends(get_current_user())])
 
 
+@router.get("/me", response_model=CompanyInDB)
+async def get_my_company(user: User = Depends(get_current_user()), db: AsyncSession = Depends(get_async_session)):
+    return await get_company(db=db, company_id=user.company_id)
+
+
 @router.get("/", response_model=list[CompanyInDB])
 async def get_companies(user: User = Depends(get_current_user(superuser=True)),
                         db: AsyncSession = Depends(get_async_session)):
     return await get_all_companies(db)
-
-
-@router.get("/me", response_model=CompanyInDB)
-async def get_my_company(user: User = Depends(get_current_user()), db: AsyncSession = Depends(get_async_session)):
-    return await get_company(db=db, company_id=user.company_id)
 
 
 @router.post("/", response_model=CompanyInDB)
