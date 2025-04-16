@@ -37,7 +37,7 @@ services:
     build:
       context: .
       dockerfile: docker/api.dockerfile
-      target: development
+      target: dev
       args:
         - UID=${UID:-1001}
         - GID=${GID:-1001}

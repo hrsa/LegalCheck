@@ -97,6 +97,10 @@ services:
       context: .
       dockerfile: docker/api.dockerfile
       target: prod
+      args:
+        - UID=${UID:-1001}
+        - GID=${GID:-1001}
+        - USER=${USER:-anton}
     container_name: lc-api
     ports:
       - "127.0.0.1:8000:8000"

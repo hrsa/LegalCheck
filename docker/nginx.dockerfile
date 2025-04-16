@@ -17,13 +17,13 @@ RUN rm /etc/nginx/conf.d/default.conf
 
 
 FROM base AS dev
-COPY ./docker/nginx-dev.conf /etc/nginx/conf.d/default.conf
+COPY docker/nginx-dev.conf /etc/nginx/conf.d/default.conf
 
 FROM base AS copy
-COPY ./dist/ /usr/share/nginx/html/
+COPY dist/ /usr/share/nginx/html/
 
 FROM copy AS prod
-COPY ./docker/nginx-prod.conf /etc/nginx/conf.d/default.conf
+COPY docker/nginx-prod.conf /etc/nginx/conf.d/default.conf
 
 FROM copy AS no-ssl
-COPY ./docker/nginx-no-ssl.conf /etc/nginx/conf.d/default.conf
+COPY docker/nginx-no-ssl.conf /etc/nginx/conf.d/default.conf
