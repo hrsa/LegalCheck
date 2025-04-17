@@ -4,10 +4,10 @@ from sqlalchemy import Integer, String, Text, ForeignKey, DateTime, JSON
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from app.api.v1.schemas.rule import RuleType, Severity
-from app.db.base_class import Base
+from app.db.base_class import BaseSoftDelete
 
 
-class PolicyRule(Base):
+class PolicyRule(BaseSoftDelete):
     __tablename__ = "policy_rules"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)

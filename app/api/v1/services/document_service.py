@@ -12,6 +12,7 @@ from app.analysers.document_processor import DocumentProcessor
 from app.api.v1.schemas.document import DocumentCreate
 from app.core.config import settings
 from app.db.models import Document, User
+from app.db.soft_delete import filtered_select
 
 DOCUMENT_STORAGE = os.path.join(settings.BASE_DIR, "storage/documents")
 
@@ -57,16 +58,16 @@ async def save_document(db: AsyncSession, file: UploadFile, user: User, backgrou
 
 async def get_document(db: AsyncSession, document_id: int):
     result = await db.execute(
-        select(Document).filter(Document.id == document_id)
+        filtered_select(Document).filter(Document.id == document_id)
     )
     return result.scalar_one_or_none()
 
 
 async def get_all_documents(db: AsyncSession, user: User, skip: int = 0, limit: int = 100):
     if user.is_superuser:
-        query = select(Document).offset(skip).limit(limit).order_by(Document.id.desc())
+        query = filtered_select(Document).offset(skip).limit(limit).order_by(Document.id.desc())
     else:
-        query = select(Document).filter(Document.company_id == user.company_id).offset(skip).limit(limit).order_by(Document.id.desc())
+        query = filtered_select(Document).filter(Document.company_id == user.company_id).offset(skip).limit(limit).order_by(Document.id.desc())
 
     result = await db.execute(query)
     return result.scalars().all()
@@ -74,7 +75,7 @@ async def get_all_documents(db: AsyncSession, user: User, skip: int = 0, limit: 
 
 async def ocr_document(document_id: int, db: AsyncSession) -> None:
     try:
-        document = await db.get(Document, document_id)
+        document = await get_document(db, document_id)
 
         if not document:
             logger.error(f"Document {document.id} not found in DB during background processing")
@@ -87,15 +88,20 @@ async def ocr_document(document_id: int, db: AsyncSession) -> None:
 
 
 async def delete_document(db: AsyncSession, user: User, document_id: int):
-    document = await db.get(Document, document_id)
-
-    if not user.is_superuser and document.company_id != user.company_id:
-        raise HTTPException(HTTPStatus.UNAUTHORIZED, "You are not authorized to delete this document")
+    document = await get_document(db, document_id)
 
     if not document:
         raise HTTPException(HTTPStatus.NOT_FOUND, "Document not found")
 
+    if not user.is_superuser and document.company_id != user.company_id:
+        raise HTTPException(HTTPStatus.UNAUTHORIZED, "You are not authorized to delete this document")
+
     if isinstance(document.file_path, str):
-        os.remove(document.file_path)
-    await db.delete(document)
+        try:
+            os.remove(document.file_path)
+        except FileNotFoundError:
+            logger.warning(f"Document {document_id} file was missing during removal")
+
+    await document.soft_delete(db=db, cascade=True)
+
     await db.commit()

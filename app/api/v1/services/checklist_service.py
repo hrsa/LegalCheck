@@ -7,13 +7,14 @@ from app.api.v1.schemas.checklist import ChecklistCreate, ChecklistUpdate, Check
     ChecklistInDB
 from app.api.v1.schemas.rule import RuleInDB
 from app.db.models import User, Company, Checklist, PolicyRule
+from app.db.soft_delete import filtered_select
 
 
 async def get_all_checklists(db: AsyncSession, user: User):
     if user.is_superuser:
-        query = select(Checklist).order_by(Checklist.id.desc())
+        query = filtered_select(Checklist).order_by(Checklist.id.desc())
     else:
-        query = select(Checklist).filter(
+        query = filtered_select(Checklist).filter(
             or_(user.company_id == Checklist.company_id, user.id == Checklist.user_id))
     result = await db.execute(query)
     checklists = result.scalars().all()
@@ -25,7 +26,7 @@ async def get_all_checklists(db: AsyncSession, user: User):
 
     rules_map = {}
     if all_rule_ids:
-        rules_query = select(PolicyRule).where(PolicyRule.id.in_(list(all_rule_ids)))
+        rules_query = filtered_select(PolicyRule).where(PolicyRule.id.in_(list(all_rule_ids)))
         rules_result = await db.execute(rules_query)
         rules = rules_result.scalars().all()
         rules_map = {rule.id: RuleInDB.model_validate(rule) for rule in rules}
@@ -49,7 +50,7 @@ async def get_all_checklists(db: AsyncSession, user: User):
 
 async def get_checklist(db: AsyncSession, checklist_id: int):
     result = await db.execute(
-        select(Checklist).filter(Checklist.id == checklist_id)
+        filtered_select(Checklist).filter(Checklist.id == checklist_id)
     )
     return result.scalar_one_or_none()
 
@@ -129,14 +130,14 @@ async def delete_checklist(db: AsyncSession, user: User, checklist_id: int):
         raise Exception("Checklist not found")
     if db_checklist.user_id != user.id and db_checklist.company_id != user.company_id and not user.is_superuser:
         raise Exception("You don't have permission to delete this checklist")
-    await db.delete(db_checklist)
+    await db_checklist.soft_delete(db=db, cascade=True)
     await db.commit()
 
 
 async def check_missing_rules(db: AsyncSession, ruleset: list[int]):
     rule_ids = set(ruleset)
 
-    query = select(PolicyRule.id).where(PolicyRule.id.in_(rule_ids))
+    query = filtered_select(PolicyRule.id).where(PolicyRule.id.in_(rule_ids))
     result = await db.execute(query)
     existing_rule_ids = set(result.scalars().all())
 

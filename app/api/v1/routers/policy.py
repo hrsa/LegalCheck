@@ -43,7 +43,7 @@ async def update_policy_api(policy_id: int, policy: PolicyUpdate, db: AsyncSessi
         raise e
 
 
-@router.delete("/{policy_id}/")
+@router.delete("/{policy_id}")
 async def delete_policy_api(policy_id: int, db: AsyncSession = Depends(get_async_session)):
     try:
         await delete_policy(db, policy_id=policy_id)

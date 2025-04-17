@@ -1,11 +1,12 @@
 from datetime import datetime, timezone
+
 from sqlalchemy import String, DateTime, Integer, ForeignKey, JSON
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
-from app.db.base_class import Base
+from app.db.base_class import BaseSoftDelete
 
 
-class Checklist(Base):
+class Checklist(BaseSoftDelete):
     __tablename__ = "checklists"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)

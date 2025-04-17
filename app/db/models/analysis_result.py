@@ -4,10 +4,10 @@ from sqlalchemy import ForeignKey, JSON, DateTime, String
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from app.api.v1.schemas.analysis import Conflict, Risk, MissingClause, Suggestion, PaymentTerm
-from app.db.base_class import Base
+from app.db.base_class import BaseSoftDelete
 
 
-class AnalysisResult(Base):
+class AnalysisResult(BaseSoftDelete):
     __tablename__ = "analysis_results"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)

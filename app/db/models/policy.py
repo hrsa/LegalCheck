@@ -1,13 +1,13 @@
 from datetime import datetime, timezone
+
 from sqlalchemy import Integer, String, Text, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from app.api.v1.schemas.policy import PolicyType
-from app.db.base_class import Base
+from app.db.base_class import BaseSoftDelete
 
 
-
-class Policy(Base):
+class Policy(BaseSoftDelete):
     __tablename__ = "policies"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
@@ -27,7 +27,7 @@ class Policy(Base):
                                                                      timezone.utc))
 
     company: Mapped["Company"] = relationship("Company", back_populates="policies")
-    rules: Mapped[list["PolicyRule"]] = relationship("PolicyRule", back_populates="policy")
+    rules: Mapped[list["PolicyRule"]] = relationship("PolicyRule", back_populates="policy", cascade="delete")
     embedding: Mapped["Embedding"] = relationship("Embedding",
                                                   primaryjoin="and_(foreign(Embedding.content_id)==Policy.id, Embedding.content_type=='policy')",
                                                   uselist=False, viewonly=True)

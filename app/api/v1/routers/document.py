@@ -23,7 +23,7 @@ async def read_documents(user: User = Depends(get_current_user()), db: AsyncSess
     return await get_all_documents(db, user)
 
 
-@router.get("/{document_id}/", response_model=DocumentInDB)
+@router.get("/{document_id}", response_model=DocumentInDB)
 async def read_document(document_id: int, db: AsyncSession = Depends(get_async_session)):
     document = await get_document(db, document_id=document_id)
     if not document:
@@ -31,7 +31,7 @@ async def read_document(document_id: int, db: AsyncSession = Depends(get_async_s
     return document
 
 
-@router.delete("/{document_id}/")
+@router.delete("/{document_id}")
 async def remove_document(document_id: int, user: User = Depends(get_current_user()),
                           db: AsyncSession = Depends(get_async_session)):
     try:

@@ -6,17 +6,18 @@ from sqlalchemy.future import select
 from app.api.v1.schemas.company import CompanyCreate, CompanyUpdate
 from app.api.v1.schemas.policy import PolicyCreate, PolicyUpdate, PolicyType
 from app.db.models import Policy, User, Company
+from app.db.soft_delete import filtered_select
 
 
 async def get_all_companies(db: AsyncSession, skip: int = 0, limit: int = 100):
     result = await db.execute(
-        select(Company).offset(skip).limit(limit)
+        filtered_select(Company).offset(skip).limit(limit)
     )
     return result.scalars().all()
 
 async def get_company(db: AsyncSession, company_id: int):
     result = await db.execute(
-        select(Company).filter(Company.id == company_id)
+        filtered_select(Company).filter(Company.id == company_id)
     )
     return result.scalar_one_or_none()
 
@@ -46,5 +47,5 @@ async def delete_company(db: AsyncSession, company_id: int):
     db_company = await get_company(db, company_id)
     if not db_company:
         return None
-    await db.delete(db_company)
+    await db_company.soft_delete(db=db, cascade=True)
     await db.commit()

@@ -5,9 +5,10 @@ from typing import Optional
 from fastapi import HTTPException
 from google.genai.errors import APIError
 from loguru import logger
+from sqlalchemy import and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, contains_eager
 
 from app.analysers.document_processor import DocumentProcessor
 from app.api.v1.schemas.analysis import AnalysisResultInDb
@@ -20,42 +21,52 @@ from app.api.v1.services.conversation_service import get_conversation, create_co
 from app.api.v1.services.policy_service import get_active_policies_by_company
 from app.core.ai.ai_client import gemini_client
 from app.core.ai.document_analysis import upload_file, initial_analysis, chat_with_document as ask_the_document
-from app.db.models import Document, AnalysisResult, User, Policy, PolicyRule
+from app.db.models import Document, AnalysisResult, User, Policy, PolicyRule, Checklist
+from app.db.soft_delete import filtered_select, filtered_load
 from app.utils.formatters import format_policies_and_rules_into_text
 
 
 async def get_all_analysis_results(db: AsyncSession, user: User):
     if user.is_superuser:
-        query = select(AnalysisResult).order_by(AnalysisResult.id.desc())
+        query = filtered_select(AnalysisResult).order_by(AnalysisResult.id.desc())
     else:
-        query = select(AnalysisResult).join(Document, Document.id == AnalysisResult.document_id).filter(
+        query = filtered_select(AnalysisResult).join(Document, Document.id == AnalysisResult.document_id).filter(
             Document.company_id == user.company_id)
 
     results = await db.execute(query.options(joinedload(AnalysisResult.checklist)))
     db_results = results.scalars().all()
     return [
         AnalysisResultInDb.model_validate(item, from_attributes=True).model_copy(
-            update={"checklist_name": item.checklist.name if item.checklist_id else None}
+            update={
+                "checklist_name": getattr(item.checklist, 'name', None),
+                "checklist_id": item.checklist.id if getattr(item.checklist, 'is_deleted', False) else None
+            }
         )
         for item in db_results
     ]
 
 
 async def get_document_analysis_results(db: AsyncSession, user: User, document_id: int):
-    result = await db.execute(select(AnalysisResult).filter(AnalysisResult.document_id == document_id).options(
-        joinedload(AnalysisResult.checklist)))
+    result = await db.execute(
+        filtered_select(AnalysisResult)
+        .filter(AnalysisResult.document_id == document_id)
+        .options(joinedload(AnalysisResult.checklist))
+    )
     db_results = result.scalars().all()
 
     return [
         AnalysisResultInDb.model_validate(item, from_attributes=True).model_copy(
-            update={"checklist_name": item.checklist.name if item.checklist_id else None}
+            update={
+                "checklist_name": getattr(item.checklist, 'name', None),
+                "checklist_id": item.checklist.id if getattr(item.checklist, 'is_deleted', False) else None
+            }
         )
         for item in db_results
     ]
 
 
 async def upload_document_to_gemini(db: AsyncSession, document_id: int) -> Document:
-    result = await db.execute(select(Document).filter(Document.id == document_id))
+    result = await db.execute(filtered_select(Document).filter(Document.id == document_id))
     document = result.scalar_one_or_none()
 
     if not document:
@@ -100,20 +111,20 @@ async def get_policies_and_rules_from_checklist(db: AsyncSession, checklist_id: 
     if checklist.ruleset:
         rule_ids = checklist.ruleset
 
-        rules_query = select(PolicyRule).filter(PolicyRule.id.in_(rule_ids))
+        rules_query = filtered_select(PolicyRule).filter(PolicyRule.id.in_(rule_ids))
         rules_result = await db.execute(rules_query)
         rules = rules_result.scalars().all()
 
         policy_ids = set(rule.policy_id for rule in rules)
 
-        policies_query = select(Policy).filter(Policy.id.in_(policy_ids)).options(
+        policies_query = filtered_select(Policy).filter(Policy.id.in_(policy_ids)).options(
             joinedload(Policy.rules)
         )
         policies_result = await db.execute(policies_query)
         policies = policies_result.unique().scalars().all()
 
         for policy in policies:
-            filtered_rules = [rule for rule in policy.rules if rule.id in rule_ids]
+            filtered_rules = [rule for rule in policy.rules if rule.id in rule_ids and rule.is_deleted is False]
 
             policy_with_rules = PolicyWithRules(
                 id=policy.id,

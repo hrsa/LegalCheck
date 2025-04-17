@@ -1,12 +1,12 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import ForeignKey, String, DateTime, Boolean
+from sqlalchemy import ForeignKey, String, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base_class import Base
+from app.db.base_class import BaseSoftDelete
 
 
-class Conversation(Base):
+class Conversation(BaseSoftDelete):
     __tablename__ = "conversations"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
@@ -26,4 +26,4 @@ class Conversation(Base):
     document: Mapped["Document"] = relationship("Document", back_populates="conversations")
     user: Mapped["User"] = relationship("User", back_populates="conversations")
     messages: Mapped[list["Message"]] = relationship("Message", back_populates="conversation",
-                                                     cascade="all, delete-orphan")
+                                                     cascade="delete")

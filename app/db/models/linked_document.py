@@ -1,10 +1,12 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, Boolean, JSON
-from app.db.base_class import Base
-from sqlalchemy.orm import relationship
 import datetime
 
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, Boolean
+from sqlalchemy.orm import relationship
 
-class LinkedDocument(Base):
+from app.db.base_class import BaseSoftDelete
+
+
+class LinkedDocument(BaseSoftDelete):
     __tablename__ = "linked_documents"
 
     id = Column(Integer, primary_key=True, index=True)

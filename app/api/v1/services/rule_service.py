@@ -6,18 +6,19 @@ from sqlalchemy import or_, String, func
 from app.api.v1.schemas.policy import PolicyType
 from app.api.v1.schemas.rule import RuleCreate, RuleUpdate
 from app.db.models import PolicyRule, User, Policy
+from app.db.soft_delete import filtered_select
 
 
 async def get_rules(db: AsyncSession, policy_id: int):
     result = await db.execute(
-        select(PolicyRule).filter(PolicyRule.policy_id == policy_id)
+        filtered_select(PolicyRule).filter(PolicyRule.policy_id == policy_id)
     )
     return result.scalars().all()
 
 
 async def get_rule(db: AsyncSession, rule_id: int):
     result = await db.execute(
-        select(PolicyRule).filter(PolicyRule.id == rule_id)
+        filtered_select(PolicyRule).filter(PolicyRule.id == rule_id)
     )
     return result.scalar_one_or_none()
 
@@ -25,7 +26,7 @@ async def get_rule(db: AsyncSession, rule_id: int):
 async def find_rules(db: AsyncSession, user: User, query: str):
     company_id = user.company_id
 
-    policy_query = select(Policy.id).filter(
+    policy_query = filtered_select(Policy.id).filter(
         Policy.is_active == True,
         or_(
             (Policy.policy_type == PolicyType.company) & (Policy.company_id == company_id),
@@ -40,7 +41,7 @@ async def find_rules(db: AsyncSession, user: User, query: str):
 
     search_query = f"%{query}%"
 
-    rule_query = select(PolicyRule).filter(
+    rule_query = filtered_select(PolicyRule).filter(
         PolicyRule.policy_id.in_(accessible_policy_ids),
         PolicyRule.description.ilike(search_query)
     )
@@ -75,7 +76,7 @@ async def update_rule(db: AsyncSession, rule_id: int, rule_data: RuleUpdate):
 async def delete_rule(db: AsyncSession, rule_id: int):
     db_rule = await get_rule(db, rule_id)
     if db_rule:
-        await db.delete(db_rule)
+        await db_rule.soft_delete(db=db, cascade=True)
         await db.commit()
         return True
     return False

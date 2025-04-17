@@ -7,7 +7,6 @@ from sqlalchemy.orm import joinedload
 from app.api.v1.schemas.conversation import ConversationCreate, MessageAuthor, ConversationWithMessages, \
     ConversationUpdate
 from app.db.models import Conversation, Message, User
-from app.utils.formatters import print_model
 
 
 async def get_conversation(db: AsyncSession, conversation_id: int = None, user_id: int = None, document_id: int = None):
@@ -26,6 +25,9 @@ async def get_conversation(db: AsyncSession, conversation_id: int = None, user_i
 
     result = await db.execute(query)
     conversation = result.unique().scalar_one_or_none()
+
+    if conversation.is_deleted:
+        await conversation.restore(db=db, restore_children=False)
 
     if not conversation and user_id and document_id:
         db_conversation = await create_conversation(db, ConversationCreate(document_id=document_id, user_id=user_id))
@@ -64,9 +66,6 @@ async def update_conversation(db: AsyncSession, user: User, conversation_id: int
     if user.is_superuser:
         db_conversation.document_id = update_data.get("document_id", db_conversation.document_id)
         db_conversation.user_id = update_data.get("user_id", db_conversation.user_id)
-
-    logger.info(f"Updated conversation {db_conversation.id} {db_conversation.title}")
-    logger.info(conversation_data.model_dump(exclude_unset=True, exclude_none=True))
 
     await db.commit()
     return await get_conversation(db, conversation_id)

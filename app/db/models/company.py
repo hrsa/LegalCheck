@@ -1,12 +1,12 @@
 from datetime import datetime, timezone
+
 from sqlalchemy import String, DateTime
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
-from app.db.base_class import Base
+from app.db.base_class import BaseSoftDelete
 
 
-
-class Company(Base):
+class Company(BaseSoftDelete):
     __tablename__ = "companies"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
@@ -24,7 +24,7 @@ class Company(Base):
                                                                  onupdate=lambda: datetime.now(
                                                                      timezone.utc))
 
-    documents: Mapped[list["Document"]] = relationship("Document", back_populates="company")
-    policies: Mapped[list["Policy"]] = relationship("Policy", back_populates="company")
-    users: Mapped["User"] = relationship("User", back_populates="company")
-    checklists: Mapped[list["Checklist"]] = relationship("Checklist", back_populates="company")
+    documents: Mapped[list["Document"]] = relationship("Document", back_populates="company", cascade="delete")
+    policies: Mapped[list["Policy"]] = relationship("Policy", back_populates="company", cascade="delete")
+    users: Mapped["User"] = relationship("User", back_populates="company", cascade="delete")
+    checklists: Mapped[list["Checklist"]] = relationship("Checklist", back_populates="company", cascade="delete")
