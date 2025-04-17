@@ -275,7 +275,20 @@ jobs:
             mv docker-compose-prod.yml docker-compose.yml
             docker system prune -a -f
             docker compose pull
-            docker compose run --rm certbot
+            
+            mkdir -p /var/www/certbot_tracker
+            
+            CERTBOT_LAST_RUN_FILE="/var/www/certbot_tracker/last_run.txt"
+            CURRENT_DATE=$(date +%Y%m)
+            
+            if [ ! -f "$CERTBOT_LAST_RUN_FILE" ] || [ "$(cat $CERTBOT_LAST_RUN_FILE)" != "$CURRENT_DATE" ]; then
+              echo "Running certbot renewal (last run: $([ -f "$CERTBOT_LAST_RUN_FILE" ] && cat $CERTBOT_LAST_RUN_FILE || echo 'never'))"
+              docker compose run --rm certbot
+              echo "$CURRENT_DATE" > "$CERTBOT_LAST_RUN_FILE"
+            else
+              echo "Skipping certbot renewal, already run this month"
+            fi
+
             docker compose down
             docker compose up -d nginx
             
@@ -292,9 +305,10 @@ jobs:
               echo "Application failed to start in time, rolling back..."
               docker compose down
               mv docker-compose.yml.backup docker-compose.yml
-              docker compose up -d
+              docker compose up -d nginx
               exit 1
             else
               echo "Application is healthy!"
+              docker compose exec api alembic upgrade head
               find /var/www -name "docker-compose.yml.backup*" -type f -mtime +7 -delete
             fi
