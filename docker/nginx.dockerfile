@@ -16,9 +16,6 @@ RUN sed -i "s/user nginx/user '${USER}'/g" /etc/nginx/nginx.conf
 RUN rm /etc/nginx/conf.d/default.conf
 
 
-FROM base AS dev
-COPY docker/nginx-dev.conf /etc/nginx/conf.d/default.conf
-
 FROM base AS copy
 COPY dist/ /usr/share/nginx/html/
 
