@@ -2,15 +2,11 @@ import asyncio
 from urllib.parse import urlparse
 
 import pytest
-from alembic import command
-from alembic.config import Config
-from fastapi import Depends
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.core.config import settings
-from app.db.models import Company
-from app.db.session import get_async_session
+from tests.conftest import run_migrations_up, run_migrations_down, create_initial_company
 
 
 @pytest.mark.order(1)
@@ -63,29 +59,3 @@ async def create_test_db_if_not_exists(db_url, db_name):
         await engine.dispose()
 
 
-def run_migrations_up():
-    print("Running Alembic migrations...")
-
-    alembic_cfg = Config("alembic.ini")
-    command.upgrade(alembic_cfg, "head")
-
-    print("Alembic migrations completed successfully")
-
-def run_migrations_down():
-    print("Running Alembic migrations...")
-
-    alembic_cfg = Config("alembic.ini")
-    command.downgrade(alembic_cfg, "base")
-
-    print("Alembic downgrade completed successfully")
-
-async def create_initial_company(db: AsyncSession):
-    company = Company(
-        name="Client Company",
-        registration_number="1234567890",
-        address="123 Main Street, New York, NY 10001",
-        country="USA",
-        invite_code="invitation"
-    )
-    db.add(company)
-    await db.commit()
