@@ -1,6 +1,7 @@
 import base64
 from typing import Optional
 
+from google.genai.types import Tool, GoogleSearch, GenerateContentConfig
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +21,9 @@ def check_files():
 
 
 async def chat_with_document(text: str, gemini_file_name: str, db: AsyncSession, history: Optional[str] = None):
+    google_search_tool = Tool(
+        google_search=GoogleSearch()
+    )
     document = gemini_client.files.get(name=gemini_file_name)
     relevant_rules = format_policies_and_rules_into_text(await semantic_search(text=text, db=db))
     system_instruction = f"You are LegalCheck - an expert AI for legal teams. Answer the user's question clearly and concisely. Don't cite the document where it's not needed. Here are some rules which may be relevant to the question:\n {relevant_rules}"
@@ -27,11 +31,13 @@ async def chat_with_document(text: str, gemini_file_name: str, db: AsyncSession,
         system_instruction += f"\n\nPrevious conversation:\n{history}"
 
     response = gemini_client.models.generate_content(
-        model="gemini-2.0-flash",
+        model=settings.GEMINI_MODEL,
         contents=[document, "\n\n", text],
-        config={
-            "system_instruction": system_instruction,
-        }
+        config=GenerateContentConfig(
+            tools=[google_search_tool],
+            response_modalities=["TEXT"],
+            system_instruction=[system_instruction]
+        )
     )
 
     return response.text
@@ -43,7 +49,7 @@ def initial_analysis(file_name, policies_and_rules):
     complete_prompt: str = base64.b64decode(settings.INITIAL_ANALYSIS_PROMPT).decode('utf-8') + policies_and_rules
 
     response = gemini_client.models.generate_content(
-        model="gemini-2.0-flash",
+        model=settings.GEMINI_MODEL,
         contents=[file, "\n\n", "Analyze the document."],
         config={
             "system_instruction": complete_prompt,

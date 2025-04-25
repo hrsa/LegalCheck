@@ -23,6 +23,7 @@ class Settings(BaseSettings, env_file=os.getenv("ENV_FILE", ".env"), case_sensit
 
     OPENAI_API_KEY: str
     GEMINI_API_KEY: str
+    GEMINI_MODEL: str = "gemini-2.5-flash-preview-04-17"
     SENTRY_DSN_URL: Optional[str] = None
     INITIAL_ANALYSIS_PROMPT: str
 
