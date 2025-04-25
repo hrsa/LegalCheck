@@ -4,9 +4,7 @@ from http import HTTPStatus
 
 from fastapi import BackgroundTasks, UploadFile, HTTPException
 from loguru import logger
-from pyasn1_modules.rfc5934 import StatusCodeList
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 
 from app.analysers.document_processor import DocumentProcessor
 from app.api.v1.schemas.document import DocumentCreate

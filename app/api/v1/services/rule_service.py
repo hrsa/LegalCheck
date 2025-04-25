@@ -1,3 +1,4 @@
+from fastapi import BackgroundTasks
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -5,6 +6,7 @@ from sqlalchemy import or_, String, func
 
 from app.api.v1.schemas.policy import PolicyType
 from app.api.v1.schemas.rule import RuleCreate, RuleUpdate
+from app.api.v1.services.embedding_service import create_embedding, delete_embedding
 from app.db.models import PolicyRule, User, Policy
 from app.db.soft_delete import filtered_select
 
@@ -50,15 +52,16 @@ async def find_rules(db: AsyncSession, user: User, query: str):
     return result.scalars().all()
 
 
-async def create_rule(db: AsyncSession, rule: RuleCreate):
+async def create_rule(background_tasks: BackgroundTasks, db: AsyncSession, rule: RuleCreate):
     db_rule = PolicyRule(**rule.model_dump())
     db.add(db_rule)
     await db.commit()
     await db.refresh(db_rule)
+    background_tasks.add_task(create_embedding, db, policy=None, rule=db_rule)
     return db_rule
 
 
-async def update_rule(db: AsyncSession, rule_id: int, rule_data: RuleUpdate):
+async def update_rule(background_tasks: BackgroundTasks, db: AsyncSession, rule_id: int, rule_data: RuleUpdate):
     db_rule = await get_rule(db, rule_id)
     if not db_rule:
         return None
@@ -70,6 +73,7 @@ async def update_rule(db: AsyncSession, rule_id: int, rule_data: RuleUpdate):
 
     await db.commit()
     await db.refresh(db_rule)
+    background_tasks.add_task(create_embedding, db, policy=None, rule=db_rule)
     return db_rule
 
 
@@ -78,5 +82,6 @@ async def delete_rule(db: AsyncSession, rule_id: int):
     if db_rule:
         await db_rule.soft_delete(db=db, cascade=True)
         await db.commit()
+        await delete_embedding(db, "rule", rule_id)
         return True
     return False

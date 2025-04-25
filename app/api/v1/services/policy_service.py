@@ -1,13 +1,13 @@
 from http import HTTPStatus
 
-from fastapi import HTTPException
+from fastapi import HTTPException, BackgroundTasks
 from sqlalchemy import or_
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy.future import select
+from sqlalchemy.orm import joinedload
 
 from app.api.v1.schemas.policy import PolicyCreate, PolicyUpdate, PolicyType, PolicyWithRules
 from app.api.v1.schemas.rule import RuleInDB
+from app.api.v1.services.embedding_service import create_embedding, delete_embedding
 from app.db.models import Policy, User
 from app.db.soft_delete import filtered_select
 
@@ -57,7 +57,7 @@ async def get_policy(db: AsyncSession, policy_id: int):
     return result.scalar_one_or_none()
 
 
-async def create_policy(db: AsyncSession, user: User, policy: PolicyCreate):
+async def create_policy(background_tasks: BackgroundTasks, db: AsyncSession, user: User, policy: PolicyCreate):
     db_policy = Policy(**policy.model_dump())
     if policy.policy_type == PolicyType.company:
         db_policy.company_id = user.company_id
@@ -65,10 +65,11 @@ async def create_policy(db: AsyncSession, user: User, policy: PolicyCreate):
     db.add(db_policy)
     await db.commit()
     await db.refresh(db_policy)
+    background_tasks.add_task(create_embedding, db, policy=db_policy, rule=None)
     return db_policy
 
 
-async def update_policy(db: AsyncSession, policy_id: int, policy_data: PolicyUpdate):
+async def update_policy(background_tasks: BackgroundTasks, db: AsyncSession, policy_id: int, policy_data: PolicyUpdate):
     db_policy = await get_policy(db, policy_id)
     if not db_policy:
         raise HTTPException(HTTPStatus.NOT_FOUND, detail="Policy not found")
@@ -79,6 +80,7 @@ async def update_policy(db: AsyncSession, policy_id: int, policy_data: PolicyUpd
 
     await db.commit()
     await db.refresh(db_policy)
+    background_tasks.add_task(create_embedding, db, policy=db_policy, rule=None)
     return db_policy
 
 
@@ -87,4 +89,5 @@ async def delete_policy(db: AsyncSession, policy_id: int):
     if not db_policy:
         raise HTTPException(HTTPStatus.NOT_FOUND, detail="Policy not found")
     await db_policy.soft_delete(db=db, cascade=True)
+    await delete_embedding(db, "policy", policy_id)
     await db.commit()

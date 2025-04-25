@@ -36,7 +36,7 @@ async def update_company_api(company_id: int, company: CompanyUpdate,
     return await update_company(db, company_id=company_id, company_data=company)
 
 
-@router.delete("/{company_id}/")
+@router.delete("/{company_id}")
 async def delete_company_api(company_id: int, user: User = Depends(get_current_user(superuser=True)),
                              db: AsyncSession = Depends(get_async_session)):
     return await delete_company(db, company_id)

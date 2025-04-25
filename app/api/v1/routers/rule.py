@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, BackgroundTasks
 from fastapi.params import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,8 +24,8 @@ async def search_rule(query: str, user: User = Depends(get_current_user()), db: 
 
 
 @router.post("/", response_model=RuleInDB)
-async def create_rule(rule: RuleCreate, db: AsyncSession = Depends(get_async_session)):
-    return await create_rule_service(db, rule)
+async def create_rule(background_tasks: BackgroundTasks, rule: RuleCreate, db: AsyncSession = Depends(get_async_session)):
+    return await create_rule_service(background_tasks, db, rule)
 
 
 @router.get("/{rule_id}", response_model=RuleInDB)
@@ -37,14 +37,14 @@ async def read_rule(rule_id: int, db: AsyncSession = Depends(get_async_session))
 
 
 @router.patch("/{rule_id}", response_model=RuleInDB)
-async def update_rule(rule_id: int, rule: RuleUpdate, db: AsyncSession = Depends(get_async_session)):
-    updated_rule = await update_rule_service(db, rule_id, rule_data=rule)
+async def update_rule(background_tasks: BackgroundTasks, rule_id: int, rule: RuleUpdate, db: AsyncSession = Depends(get_async_session)):
+    updated_rule = await update_rule_service(background_tasks, db, rule_id, rule_data=rule)
     if updated_rule is None:
         raise HTTPException(status_code=404, detail="Rule not found")
     return updated_rule
 
 
-@router.delete("/{rule_id}/")
+@router.delete("/{rule_id}")
 async def delete_rule(rule_id: int, db: AsyncSession = Depends(get_async_session)):
     result = await delete_rule_service(db, rule_id=rule_id)
     if not result:

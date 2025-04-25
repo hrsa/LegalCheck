@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, BackgroundTasks
 from fastapi.params import Depends
 from google.genai.live import AsyncSession
 
@@ -31,14 +31,14 @@ async def read_policy(policy_id: int, db: AsyncSession = Depends(get_async_sessi
 
 
 @router.post("/", response_model=PolicyInDB)
-async def create_policy_api(policy: PolicyCreate, user: User = Depends(get_current_user()), db: AsyncSession = Depends(get_async_session)):
-    return await create_policy(db, user, policy)
+async def create_policy_api(background_tasks: BackgroundTasks, policy: PolicyCreate, user: User = Depends(get_current_user()), db: AsyncSession = Depends(get_async_session)):
+    return await create_policy(background_tasks, db, user, policy)
 
 
 @router.patch("/{policy_id}", response_model=PolicyInDB)
-async def update_policy_api(policy_id: int, policy: PolicyUpdate, db: AsyncSession = Depends(get_async_session)):
+async def update_policy_api(background_tasks: BackgroundTasks, policy_id: int, policy: PolicyUpdate, db: AsyncSession = Depends(get_async_session)):
     try:
-        return await update_policy(db, policy_id, policy_data=policy)
+        return await update_policy(background_tasks, db, policy_id, policy_data=policy)
     except HTTPException as e:
         raise e
 

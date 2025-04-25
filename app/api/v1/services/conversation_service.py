@@ -26,7 +26,7 @@ async def get_conversation(db: AsyncSession, conversation_id: int = None, user_i
     result = await db.execute(query)
     conversation = result.unique().scalar_one_or_none()
 
-    if conversation.is_deleted:
+    if conversation and conversation.is_deleted:
         await conversation.restore(db=db, restore_children=False)
 
     if not conversation and user_id and document_id:

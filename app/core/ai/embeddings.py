@@ -11,7 +11,7 @@ def get_embedding_openai(text):
     return response.data[0].embedding
 
 
-def get_embedding_gemini(text) -> ContentEmbedding:
+def get_embedding_gemini(text):
     response = gemini_client.models.embed_content(
         model="gemini-embedding-exp-03-07",
         contents=text,
