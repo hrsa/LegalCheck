@@ -14,7 +14,7 @@ pgvector~=0.4.0
 
 
 # Document processing
-PyPDF2>=3.0.0
+PyPDF2>=3.0.1
 PyMuPDF
 ezodf~=0.3.2
 opendocument
@@ -35,7 +35,7 @@ nltk>=3.8.1
 spacy>=3.6.0
 
 # OpenAI integration (optional)
-openai~=1.68.2
+openai
 google-genai
 
 python-dotenv>=1.0.1

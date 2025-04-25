@@ -1,10 +1,9 @@
 import pytest
 
 from app.core.config import settings
-from app.main import app
 
 
-@pytest.mark.asyncio(loop_scope="session")
+@pytest.mark.asyncio(loop_scope="package")
 async def test_register_user(async_client):
     payload = {
         "email": "test@user.com",
@@ -27,7 +26,7 @@ async def test_register_user(async_client):
     assert response_json["is_superuser"] == False
     assert response_json["is_active"] == True
 
-@pytest.mark.asyncio(loop_scope="session")
+@pytest.mark.asyncio(loop_scope="package")
 async def test_login_user(async_client):
 
     correct_payload = {
@@ -49,7 +48,7 @@ async def test_login_user(async_client):
     assert "set-cookie" in response.headers, "Response missing cookies"
     assert "legalcheck_access_token=" in response.headers["set-cookie"], "Access token not found in cookies"
 
-@pytest.mark.asyncio(loop_scope="session")
+@pytest.mark.asyncio(loop_scope="package")
 async def test_me_route(async_client):
     new_user_payload = {
         "email": "test2@user.com",
@@ -80,7 +79,7 @@ async def test_me_route(async_client):
     assert response.json()["company_id"] == 1
     assert response.json()["is_superuser"] == False
 
-@pytest.mark.asyncio(loop_scope="session")
+@pytest.mark.asyncio(loop_scope="package")
 async def test_logout_user(async_client):
     response = await async_client.post(f"{settings.API_V1_STR}/auth/login",
                             data={

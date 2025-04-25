@@ -18,20 +18,20 @@ def set_test_env():
     os.environ["ENV_FILE"] = ".env.test"
 
 
-@pytest_asyncio.fixture()
+@pytest_asyncio.fixture(loop_scope="package")
 async def async_client():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
 
 
-@pytest_asyncio.fixture(scope="module", autouse=True)
+@pytest_asyncio.fixture(scope="module", loop_scope="package", autouse=True)
 async def engine():
     engine = create_async_engine(settings.DATABASE_URL)
     yield engine
     await engine.dispose()
 
 
-@pytest_asyncio.fixture(scope="module", autouse=True)
+@pytest_asyncio.fixture(scope="module", loop_scope="package", autouse=True)
 async def db_session(engine):
     async_session_maker_test = async_sessionmaker(engine, expire_on_commit=False)
 
@@ -43,7 +43,7 @@ async def db_session(engine):
     await engine.dispose()
 
 
-@pytest_asyncio.fixture(scope="module", autouse=True)
+@pytest_asyncio.fixture(scope="module", loop_scope="package", autouse=True)
 async def fresh_db_session(db_session):
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(None, run_migrations_down)

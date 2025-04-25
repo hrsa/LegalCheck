@@ -10,7 +10,7 @@ from tests.conftest import run_migrations_up, run_migrations_down, create_initia
 
 
 @pytest.mark.order(1)
-@pytest.mark.asyncio(loop_scope="session")
+@pytest.mark.asyncio(loop_scope="package")
 async def test_environment_setup(db_session):
     """
     Test that:
