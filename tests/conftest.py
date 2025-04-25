@@ -43,7 +43,7 @@ async def db_session(engine):
     await engine.dispose()
 
 
-@pytest_asyncio.fixture(scope="module", loop_scope="package", autouse=True)
+@pytest_asyncio.fixture(scope="module", loop_scope="package")
 async def fresh_db_session(db_session):
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(None, run_migrations_down)

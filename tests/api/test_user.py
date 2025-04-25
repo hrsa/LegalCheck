@@ -2,6 +2,10 @@ import pytest
 
 from app.core.config import settings
 
+@pytest.mark.asyncio(loop_scope="package")
+async def test_ensures_fresh_db(fresh_db_session):
+    pass
+
 
 @pytest.mark.asyncio(loop_scope="package")
 async def test_register_user(async_client):

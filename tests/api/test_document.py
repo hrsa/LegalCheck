@@ -12,6 +12,10 @@ email = "doc_test@test.com"
 password = "securepassword123"
 
 @pytest.mark.asyncio(loop_scope="package")
+async def test_ensures_fresh_db(fresh_db_session):
+    pass
+
+@pytest.mark.asyncio(loop_scope="package")
 async def test_upload_document(async_client, document_type: str = "text"):
 
     if document_type == "text":
